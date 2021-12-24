@@ -1,0 +1,5 @@
+groupadd -r autologin
+gpasswd -a alarm autologin
+systemctl enable bluetooth
+systemctl enable ModemManager
+systemctl enable lightdm

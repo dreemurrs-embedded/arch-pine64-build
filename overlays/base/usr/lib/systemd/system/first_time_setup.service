@@ -1,0 +1,13 @@
+[Unit]
+Description=First Time Setup
+Before=basic.target getty.target shutdown.target
+Conflicts=shutdown.target
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/first_time_setup.sh
+StandardOutput=tty
+
+[Install]
+WantedBy=basic.target

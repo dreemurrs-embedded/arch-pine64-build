@@ -1,0 +1,16 @@
+dosfstools
+curl
+xz
+iw
+rfkill
+netctl
+dialog
+wpa_supplicant
+pv
+networkmanager
+v4l-utils
+sudo
+f2fs-tools
+zramswap
+danctnix-keyring
+device-pine64-pinephonepro

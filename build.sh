@@ -89,7 +89,7 @@ check_arch() {
 }
 
 download_rootfs() {
-    [ $NOCONFIRM -gt 0 ] && rm "$output_folder/ArchLinuxARM-$arch-latest.tar.gz"
+    [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" ] && return
 
     [ -f "$output_folder/ArchLinuxARM-$arch-latest.tar.gz"  ] && {
         read -rp "Stock rootfs already exist, delete it? (y/n) " yn
@@ -100,6 +100,11 @@ download_rootfs() {
         esac; }
 
     wget -O "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" http://os.archlinuxarm.org/os/ArchLinuxARM-$arch-latest.tar.gz
+
+    pushd .
+    cd $output_folder && { curl -s -L http://os.archlinuxarm.org/os/ArchLinuxARM-$arch-latest.tar.gz.md5 | md5sum -c \
+        || { rm ArchLinuxARM-$arch-latest.tar.gz && error "Rootfs checksum failed!"; } }
+    popd
 }
 
 extract_rootfs() {
@@ -136,7 +141,7 @@ init_rootfs() {
         rootfs_tarball="rootfs-$device-$ui-$date.tar.gz"
     fi
 
-    [ $NOCONFIRM -gt 0 ] && rm "$output_folder/$rootfs_tarball"
+    [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/$rootfs_tarball" ] && rm "$output_folder/$rootfs_tarball"
 
     [ -f "$output_folder/$rootfs_tarball"  ] && {
         read -rp "Rootfs seems to have generated before, delete it? (y/n) " yn
@@ -244,7 +249,8 @@ make_image() {
     [ ! -e "$output_folder/$rootfs_tarball" ] && \
         error "Rootfs not found! (how did you get here?)"
 
-    [ $NOCONFIRM -gt 0 ] && rm "$output_folder/archlinux-$device-$ui-$date.img"
+    [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/archlinux-$device-$ui-$date.img" ] && \
+        rm "$output_folder/archlinux-$device-$ui-$date.img"
 
     [ -f "$output_folder/archlinux-$device-$ui-$date.img"  ] && {
         read -rp "Disk image already exist, delete it? (y/n) " yn
@@ -351,7 +357,8 @@ EOF
 make_squashfs() {
     check_dependency mksquashfs
 
-    [ $NOCONFIRM -gt 0 ] && rm "$output_folder/archlinux-$device-$ui-$date.sqfs"
+    [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/archlinux-$device-$ui-$date.sqfs" ] && \
+        rm "$output_folder/archlinux-$device-$ui-$date.sqfs"
 
     [ -f "$output_folder/archlinux-$device-$ui-$date.sqfs"  ] && {
         read -rp "Squashfs image already exist, delete it? (y/n) " yn

@@ -8,6 +8,7 @@ set -e
 SUPPORTED_ARCHES=(aarch64 armv7)
 NOCONFIRM=0
 OSK_SDL=0
+use_mesa_git=0
 output_folder="build"
 mkdir -p "$output_folder"
 temp=$(mktemp -p $output_folder -d)
@@ -68,6 +69,7 @@ parse_presets() {
     done
 
     for i in $(cat "ui/$ui/packages"); do
+        [ $use_mesa_git -gt 0 ] && [ $i = "mesa" ] && i="mesa-git"
         packages_ui+=( $i )
     done
 

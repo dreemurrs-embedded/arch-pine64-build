@@ -235,6 +235,8 @@ EOF
 
     sed -i "s/REPLACEDATE/$date/g" "$temp/usr/local/sbin/first_time_setup.sh"
 
+    [[ "$ui" != "barebone" ]] && do_chroot passwd -d root
+
     [ -d "$temp/usr/share/glib-2.0/schemas" ] && do_chroot /usr/bin/glib-compile-schemas /usr/share/glib-2.0/schemas
     do_chroot mkinitcpio -P
 

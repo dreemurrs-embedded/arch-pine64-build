@@ -11,12 +11,13 @@ OSK_SDL=0
 use_mesa_git=0
 output_folder="build"
 mkdir -p "$output_folder"
+cachedir="$output_folder/pkgcache"
 temp=$(mktemp -p $output_folder -d)
 date=$(date +%Y%m%d)
 
 error() { echo -e "\e[41m\e[5mERROR:\e[49m\e[25m $1" && exit 1; }
 check_dependency() { [ $(which $1) ] || error "$1 not found. Please make sure it is installed and on your PATH."; }
-usage() { error "$0 [-a ARCHITECTURE] [-d device] [-u ui] [-h hostname]"; }
+usage() { error "$0 [-a ARCHITECTURE] [-d device] [-u ui] [-h hostname] [--osk-sdl] [--noconfirm] [--cachedir directory] [--no-cachedir]"; }
 cleanup() {
     trap '' EXIT
     trap '' INT
@@ -51,6 +52,8 @@ parse_args() {
             -h|--hostname) hostname=$2; shift ;;
             --noconfirm) NOCONFIRM=1;;
             --osk-sdl) OSK_SDL=1;;
+            --cachedir) cachedir=$2; shift ;;
+            --no-cachedir) cachedir= ;;
             *) usage ;;
         esac
         shift
@@ -131,6 +134,19 @@ unmount_chroot() {
     done
 }
 
+mount_cache() {
+    if [ -n "$cachedir" ]; then
+        mkdir -p "$cachedir"
+        mount --bind "$cachedir" "$temp/var/cache/pacman/pkg" || error "Failed to mount pkg cache!";
+    fi
+}
+
+unmount_cache() {
+    if [[ $(findmnt "$temp/var/cache/pacman/pkg") ]]; then
+        umount -l "$temp/var/cache/pacman/pkg" || error "Failed to unmount pkg cache!";
+    fi
+}
+
 do_chroot() {
     chroot "$temp" "$@"
 }
@@ -156,6 +172,7 @@ init_rootfs() {
     download_rootfs
     extract_rootfs
     mount_chroot
+    mount_cache
 
     rm "$temp/etc/resolv.conf"
     cat /etc/resolv.conf > "$temp/etc/resolv.conf"
@@ -209,7 +226,6 @@ FOE
 
 locale-gen
 echo "LANG=en_US.UTF-8" > /etc/locale.conf
-yes | pacman -Scc
 
 # remove pacman gnupg keys post generation
 rm -rf /etc/pacman.d/gnupg
@@ -239,6 +255,9 @@ EOF
 
     [ -d "$temp/usr/share/glib-2.0/schemas" ] && do_chroot /usr/bin/glib-compile-schemas /usr/share/glib-2.0/schemas
     do_chroot mkinitcpio -P
+
+    unmount_cache
+    yes | do_chroot pacman -Scc
 
     unmount_chroot
 

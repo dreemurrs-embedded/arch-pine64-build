@@ -23,7 +23,7 @@ cleanup() {
     trap '' INT
     if [ -d "$temp" ]; then
         unmount_chroot
-        rm -r "$temp"
+        rm -rf "$temp"
     fi
 }
 

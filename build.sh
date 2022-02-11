@@ -215,7 +215,7 @@ cp -rv /etc/skel/. /home/alarm
 chown -R alarm:alarm /home/alarm
 
 if [ -e /etc/sudoers ]; then
-    sed -i 's/# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/' /etc/sudoers
+    sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 fi
 
 cat << FOE | passwd alarm

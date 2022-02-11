@@ -3,4 +3,3 @@ size_ui_barebone="2048M"
 size_ui_phosh="5120M"
 size_ui_plasma="6144M"
 size_ui_sxmo="3584M"
-use_mesa_git=1

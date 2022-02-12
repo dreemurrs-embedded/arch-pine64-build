@@ -32,6 +32,7 @@ EOF
 
     partx -u ${DEVICE}
     $FSRESIZER ${DEVICE}p2
+    sync
 
     if [ -e /sys/devices/platform/bootsplash.0/enabled ]; then
         echo 1 > /sys/devices/platform/bootsplash.0/enabled

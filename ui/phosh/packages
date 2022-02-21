@@ -31,3 +31,5 @@ gnome-calendar-mobile
 gnome-sound-recorder
 gnome-weather
 fwupd
+gst-plugins-good
+gst-plugins-bad

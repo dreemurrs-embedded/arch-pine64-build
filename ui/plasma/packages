@@ -3,6 +3,7 @@ buho
 calindori
 danctnix-pm-ui-meta
 discover
+elisa
 fwupd
 glibc-locales
 gst-plugins-bad
@@ -11,11 +12,11 @@ index-fm
 kaccounts-providers
 kalk
 kclock
+koko
 kpeoplesink
 kweather
 maliit-keyboard
 maui-nota
-maui-pix
 megapixels
 mesa
 modemmanager
@@ -31,6 +32,5 @@ plasma-phonebook
 plasma-settings
 qmlkonsole
 spacebar
-vvave
 xdg-desktop-portal-kde
 xdg-user-dirs

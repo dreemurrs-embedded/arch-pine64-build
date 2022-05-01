@@ -1,5 +1,7 @@
 bootsplash-theme-danctnix
 chatty
+cups
+cups-filters
 danctnix-phosh-ui-meta
 danctnix-tweaks-app
 danctnix-tweaks-app-phosh
@@ -8,6 +10,7 @@ evince-mobile
 fwupd
 geary
 gedit
+ghostscript
 glibc-locales
 gnome-calculator
 gnome-calendar-mobile
@@ -20,6 +23,7 @@ gnome-software-mobile
 gnome-sound-recorder
 gnome-usage-mobile
 gnome-weather
+gsfonts
 gst-plugins-bad
 gst-plugins-good
 gtherm
@@ -29,6 +33,7 @@ megapixels
 mesa
 mmsd-tng
 mobile-config-firefox
+networkmanager-openvpn
 noto-fonts-emoji
 portfolio-file-manager
 xdg-user-dirs

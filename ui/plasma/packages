@@ -1,11 +1,15 @@
 bootsplash-theme-danctnix
 buho
 calindori
+cups
+cups-filters
 danctnix-pm-ui-meta
 discover
 elisa
 fwupd
+ghostscript
 glibc-locales
+gsfonts
 gst-plugins-bad
 gst-plugins-good
 index-fm
@@ -20,6 +24,7 @@ maui-nota
 megapixels
 mesa
 modemmanager
+networkmanager-openvpn
 noto-fonts
 noto-fonts-cjk
 noto-fonts-emoji

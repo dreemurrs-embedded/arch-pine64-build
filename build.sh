@@ -8,6 +8,7 @@ set -e
 SUPPORTED_ARCHES=(aarch64 armv7)
 NOCONFIRM=0
 OSK_SDL=0
+NO_BOOTLOADER=0
 use_mesa_git=0
 output_folder="build"
 mkdir -p "$output_folder"
@@ -285,60 +286,21 @@ make_image() {
 
     disk_size="$(eval "echo \${size_ui_$ui}")"
 
+    disk_output="$output_folder/archlinux-$device-$ui-$date.img"
+
     echo "Generating a blank disk image ($disk_size)"
-    fallocate -l $disk_size "$output_folder/archlinux-$device-$ui-$date.img"
+    fallocate -l $disk_size $disk_output
 
-    case $platform in
-        "rockchip")
-            cat << EOF | fdisk "$output_folder/archlinux-$device-$ui-$date.img"
-o
-n
-p
-1
-65535
-+128M
-t
-c
-n
-p
-2
-327680
+    boot_part_start=${boot_part_start:-1}
+    boot_part_size=${boot_part_size:-128}
 
-t
-2
-83
-a
-1
-w
-EOF
-            ;;
-        "allwinner")
-            cat << EOF | fdisk "$output_folder/archlinux-$device-$ui-$date.img"
-o
-n
-p
-1
-2048
-+128M
-t
-c
-n
-p
-2
+    echo "Boot partition start: ${boot_part_start}MB"
+    echo "Boot partition size: ${boot_part_size}MB"
 
-
-t
-2
-83
-a
-1
-w
-EOF
-            ;;
-        *)
-            error "Platform $platform is unknown!"
-            ;;
-    esac
+    parted -s $disk_output mktable gpt
+    parted -s $disk_output mkpart boot fat32 ${boot_part_start}MB $[boot_part_start+boot_part_size]MB
+    parted -s $disk_output set 1 esp on
+    parted -s $disk_output mkpart primary ext4 $[boot_part_start+boot_part_size]MB '100%'
 
     echo "Attaching loop device"
     loop_device=$(losetup -f)
@@ -357,16 +319,17 @@ EOF
     echo "Extracting rootfs to image"
     bsdtar -xpf "$output_folder/$rootfs_tarball" -C "$temp" || true
 
-    echo "Installing bootloader"
-    case $platform in
-        "rockchip")
-            dd if=$temp/boot/idbloader.img of=$loop_device seek=64 conv=notrunc,fsync
-            dd if=$temp/boot/u-boot.itb of=$loop_device seek=16384 conv=notrunc,fsync
-            ;;
-        *)
-            dd if=$temp/boot/$bootloader of=$loop_device bs=8k seek=1
-            ;;
-    esac
+    [ $NO_BOOTLOADER -lt 1 ] && {
+        echo "Installing bootloader"
+        case $platform in
+            "rockchip")
+                dd if=$temp/boot/idbloader.img of=$loop_device seek=64 conv=notrunc,fsync
+                dd if=$temp/boot/u-boot.itb of=$loop_device seek=16384 conv=notrunc,fsync
+                ;;
+            *)
+                dd if=$temp/boot/$bootloader of=$loop_device bs=128k seek=1
+                ;;
+        esac; }
 
     echo "Generating fstab"
     genfstab -U $temp | grep UUID | grep -v "swap" | tee -a $temp/etc/fstab

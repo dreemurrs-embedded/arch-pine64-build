@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SPDX-License-Identifier: GPL-3.0-only
-# Copyright 2021 Dang Huynh <danct12@disroot.org>
+# Copyright 2023 Dang Huynh <danct12@disroot.org>
 
 set -e
 

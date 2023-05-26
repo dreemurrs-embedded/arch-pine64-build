@@ -5,6 +5,7 @@ dialog
 dosfstools
 f2fs-tools
 iw
+linux-firmware
 netctl
 networkmanager
 pv

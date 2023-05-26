@@ -9,7 +9,7 @@ SUPPORTED_ARCHES=(aarch64 armv7)
 NOCONFIRM=0
 OSK_SDL=0
 NO_BOOTLOADER=0
-use_mesa_git=0
+use_pipewire=0
 output_folder="build"
 mkdir -p "$output_folder"
 cachedir="$output_folder/pkgcache"
@@ -73,7 +73,7 @@ parse_presets() {
     done
 
     for i in $(cat "ui/$ui/packages"); do
-        [ $use_mesa_git -gt 0 ] && [ $i = "mesa" ] && i="mesa-git"
+        [ $use_pipewire -gt 0 ] && packages_ui+=( pipewire-audio pipewire-alsa pipewire-jack pipewire-pulse )
         packages_ui+=( $i )
     done
 

@@ -5,3 +5,4 @@ size_ui_plasma="6144M"
 size_ui_plasma_desktop="6144M"
 size_ui_sxmo="3584M"
 boot_part_start="32"
+use_pipewire=1

@@ -199,6 +199,9 @@ pacman-key --init
 pacman-key --populate archlinuxarm danctnix
 pacman -Rsn --noconfirm linux-$arch
 pacman -Syu --noconfirm --overwrite=*
+ if [[ $ui = "plasma" ]]; then
+        pacman -S --noconfirm --overwrite=* --needed pipewire-media-session 
+ fi
 pacman -S --noconfirm --overwrite=* --needed ${packages_device[@]} ${packages_ui[@]}
 
 

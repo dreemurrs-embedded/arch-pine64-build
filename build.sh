@@ -300,7 +300,7 @@ make_image() {
     parted -s $disk_output mktable gpt
     parted -s $disk_output mkpart boot fat32 ${boot_part_start}MB $[boot_part_start+boot_part_size]MB
     parted -s $disk_output set 1 esp on
-    parted -s $disk_output mkpart primary ext4 $[boot_part_start+boot_part_size]MB '100%'
+    parted -s $disk_output mkpart rootfs ext4 $[boot_part_start+boot_part_size]MB '100%'
 
     echo "Attaching loop device"
     loop_device=$(losetup -f)

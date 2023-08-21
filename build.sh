@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# SPDX-License-Identifier: GPL-3.0-only
-# Copyright 2023 Dang Huynh <danct12@disroot.org>
 
 set -e
 
@@ -12,6 +10,7 @@ NO_BOOTLOADER=0
 use_pipewire=0
 output_folder="build"
 mkdir -p "$output_folder"
+mkdir -p "$output_folder/key"
 cachedir="$output_folder/pkgcache"
 temp=$(mktemp -p $output_folder -d)
 date=$(date +%Y%m%d)
@@ -28,8 +27,8 @@ cleanup() {
     fi
 }
 
-trap cleanup EXIT
-trap cleanup INT
+###trap cleanup EXIT
+###trap cleanup INT
 
 pre_check() {
     check_dependency wget
@@ -95,27 +94,24 @@ check_arch() {
 }
 
 download_rootfs() {
-    [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" ] && return
+    [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/armtix-$arch-latest.tar.xz" ] && return
 
-    [ -f "$output_folder/ArchLinuxARM-$arch-latest.tar.gz"  ] && {
+    [ -f "$output_folder/armtix-$arch-latest.tar.xz"  ] && {
         read -rp "Stock rootfs already exist, delete it? (y/n) " yn
         case $yn in
-            [Yy]*) rm "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" ;;
+            [Yy]*) rm "$output_folder/armtix-$arch-latest.tar.xz" ;;
             [Nn]*) return ;;
             *) echo "Aborting." && exit 1 ;;
         esac; }
 
-    wget -O "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" http://os.archlinuxarm.org/os/ArchLinuxARM-$arch-latest.tar.gz
-
-    pushd .
-    cd $output_folder && { curl -s -L http://os.archlinuxarm.org/os/ArchLinuxARM-$arch-latest.tar.gz.md5 | md5sum -c \
-        || { rm ArchLinuxARM-$arch-latest.tar.gz && error "Rootfs checksum failed!"; } }
-    popd
+    wget -r -nd -l 1 -A "armtix-dinit-*.tar.xz" https://armtixlinux.org/images/
+    curl -s -L https://armtixlinux.org/images/sha256sums | sha256sum -c |& grep ": OK" || { rm armtix-$arch-latest.tar.xz && error "Rootfs checksum failed!"; }
+    mv armtix-dinit-*.tar.xz "$output_folder/armtix-$arch-latest.tar.xz"
 }
 
 extract_rootfs() {
-    [ -f "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" ] || error "Rootfs not found"
-    bsdtar -xpf "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" -C "$temp"
+    [ -f "$output_folder/armtix-$arch-latest.tar.xz" ] || error "Rootfs not found"
+    bsdtar -xpf "$output_folder/armtix-$arch-latest.tar.xz" -C "$temp"
 }
 
 mount_chroot() {
@@ -169,59 +165,86 @@ init_rootfs() {
             [Nn]*) return ;;
             *) echo "Aborting." && exit 1 ;;
         esac; }
+    read -p "OK ? - checks" #####################################################
 
     download_rootfs
+    read -p "OK ? - download" #####################################################
     extract_rootfs
+    read -p "OK ? - extract" #####################################################
     mount_chroot
     mount_cache
+    read -p "OK ? - mounts" #####################################################
 
     rm "$temp/etc/resolv.conf"
-    cat /etc/resolv.conf > "$temp/etc/resolv.conf"
+    cat /etc/resolv.conf > "$temp/etc/resolv.conf" #####
 
     cp "overlays/base/etc/pacman.conf" "$temp/etc/pacman.conf"
+    wget -O "$temp/etc/pacman.d/mirrorlist-archlinuxarm" https://raw.githubusercontent.com/archlinuxarm/PKGBUILDs/master/core/pacman-mirrorlist/mirrorlist
 
     if [[ $ui = "barebone" ]]; then
         sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' "$temp/etc/locale.gen"
     fi
 
-    echo "${hostname:-danctnix}" > "$temp/etc/hostname"
-
+    echo "${hostname:-ppa}" > "$temp/etc/hostname"
+    
+    ls "$temp/usr/share/pacman/keyrings"
     # Download our gpg key and install it first, this however will be overwritten with our package later.
     wget https://raw.githubusercontent.com/dreemurrs-embedded/Pine64-Arch/master/PKGBUILDS/danctnix/danctnix-keyring/danctnix.gpg \
         -O "$temp/usr/share/pacman/keyrings/danctnix.gpg"
     wget https://raw.githubusercontent.com/dreemurrs-embedded/Pine64-Arch/master/PKGBUILDS/danctnix/danctnix-keyring/danctnix-trusted \
         -O "$temp/usr/share/pacman/keyrings/danctnix-trusted"
-
+    # Arch mirrorlist and keyring
+    wget -O "$temp/etc/pacman.d/mirrorlist-archlinuxarm" https://raw.githubusercontent.com/archlinuxarm/PKGBUILDs/master/core/pacman-mirrorlist/mirrorlist
+    wget -r -nd -l 1 -A "archlinuxarm-keyring-*any.pkg.tar.xz" https://fl.us.mirror.archlinuxarm.org/aarch64/core/
+    mv archlinuxarm-keyring-*any.pkg.tar.xz "$output_folder/archlinuxarm-keyring.tar.xz"
+    #tar --wildcards -C "$output_folder/key" -xf "$output_folder/archlinuxarm-keyring.tar.xz" usr/share/pacman/keyrings/* --strip-components=4
+    tar -C "$temp" -xf "$output_folder/archlinuxarm-keyring.tar.xz"
+    wget -r -nd -l 1 -A "archlinux-keyring-*any.pkg.tar.xz" https://fl.us.mirror.archlinuxarm.org/aarch64/core/
+    mv archlinux-keyring-*any.pkg.tar.xz "$output_folder/archlinux-keyring.tar.xz"
+    tar -C "$temp" -xf "$output_folder/archlinux-keyring.tar.xz"
+    ls "$temp/usr/share/pacman/keyrings"
     cat > "$temp/second-phase" <<EOF
 #!/bin/bash
 set -e
+dhcpcd
+ntpdate pool.ntp.org
+read -p "OK ? - dhcp and time" ###############
 pacman-key --init
+echo "FS1"
 pacman-key --populate archlinuxarm danctnix
-pacman -Rsn --noconfirm linux-$arch
-pacman -Syu --noconfirm --overwrite=*
+echo "FS2"
+pacman -Rsn --noconfirm linux-$arch linux-$arch-headers linux-$arch-lts linux-$arch-lts-headers
+echo "FS3"
+pacman -Syy  --noconfirm
+echo "FS4"
+pacman -S  --noconfirm --overwrite=* pacman pacman-contrib  
+echo "FS5"
+pacman -S  --noconfirm --overwrite=* archlinuxarm-keyring archlinuxarm-mirrorlist artix-keyring artix-mirrorlist artix-archlinux-support 
+echo "FS6"
+pacman -Syu  --noconfirm --overwrite=*
+echo "FS7"
 pacman -S --noconfirm --overwrite=* --needed ${packages_device[@]} ${packages_ui[@]}
+echo "FS8"
 
 
-systemctl disable sshd
-systemctl disable systemd-networkd
-systemctl disable systemd-resolved
-systemctl enable zramswap
-systemctl enable NetworkManager
+#dinitctl disable sshd
+###dinitctl enable zramswap
+#dinitctl enable NetworkManager
 
-usermod -a -G network,video,audio,rfkill,wheel alarm
+usermod -a -G network,video,audio,rfkill,wheel,input,power,storage,optical,lp,scanner,dbus,uucp armtix
 
-$(echo -e "${postinstall[@]}")
+#$(echo -e "${postinstall[@]}")
 
-cp -rv /etc/skel/. /home/alarm
-chown -R alarm:alarm /home/alarm
+cp -rv /etc/skel/. /home/armtix
+chown -R armtix:armtix /home/armtix
 
 if [ -e /etc/sudoers ]; then
     sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 fi
 
-cat << FOE | passwd alarm
-123456
-123456
+cat << FOE | passwd armtix
+armtix
+armtix
 
 FOE
 
@@ -230,9 +253,11 @@ echo "LANG=en_US.UTF-8" > /etc/locale.conf
 
 # remove pacman gnupg keys post generation
 rm -rf /etc/pacman.d/gnupg
-rm /second-phase
+#####rm /second-phase
 EOF
-
+echo "Echo of second phase:" ###############
+cat "$temp/second-phase" ##################
+read -p "OK ? - echo of second-phase" #####################################################
     chmod +x "$temp/second-phase"
     do_chroot /second-phase || error "Failed to run the second phase rootfs build!"
 
@@ -251,6 +276,7 @@ EOF
     [ -e "$temp/usr/lib/initcpio/install/bootsplash-danctnix" ] && sed -i 's/fsck/fsck bootsplash-danctnix/g' "$temp/etc/mkinitcpio.conf"
 
     sed -i "s/REPLACEDATE/$date/g" "$temp/usr/local/sbin/first_time_setup.sh"
+    echo "sudo /usr/local/sbin/first_time_setup.sh" >> "$temp/etc/bash/bashrc.d/artix.bashrc"
 
     [[ "$ui" != "barebone" ]] && do_chroot passwd -dl root
 
@@ -266,6 +292,7 @@ EOF
     pushd .
     cd $temp && bsdtar -czpf ../$rootfs_tarball .
     popd
+    read -p "OK ? - part2 end" #####################################################
     rm -rf $temp
 }
 
@@ -273,20 +300,20 @@ make_image() {
     [ ! -e "$output_folder/$rootfs_tarball" ] && \
         error "Rootfs not found! (how did you get here?)"
 
-    [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/archlinux-$device-$ui-$date.img" ] && \
-        rm "$output_folder/archlinux-$device-$ui-$date.img"
+    [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/armtix-$device-$ui-$date.img" ] && \
+        rm "$output_folder/armtix-$device-$ui-$date.img"
 
-    [ -f "$output_folder/archlinux-$device-$ui-$date.img"  ] && {
+    [ -f "$output_folder/armtix-$device-$ui-$date.img"  ] && {
         read -rp "Disk image already exist, delete it? (y/n) " yn
         case $yn in
-            [Yy]*) rm "$output_folder/archlinux-$device-$ui-$date.img" ;;
+            [Yy]*) rm "$output_folder/armtix-$device-$ui-$date.img" ;;
             [Nn]*) return ;;
             *) echo "Aborting." && exit 1 ;;
         esac; }
 
     disk_size="$(eval "echo \${size_ui_$ui}")"
 
-    disk_output="$output_folder/archlinux-$device-$ui-$date.img"
+    disk_output="$output_folder/armtix-$device-$ui-$date.img"
 
     echo "Generating a blank disk image ($disk_size)"
     fallocate -l $disk_size $disk_output
@@ -304,7 +331,7 @@ make_image() {
 
     echo "Attaching loop device"
     loop_device=$(losetup -f)
-    losetup -P $loop_device "$output_folder/archlinux-$device-$ui-$date.img"
+    losetup -P $loop_device "$output_folder/armtix-$device-$ui-$date.img"
 
     echo "Creating filesystems"
     mkfs.vfat ${loop_device}p1
@@ -343,20 +370,20 @@ make_image() {
 make_squashfs() {
     check_dependency mksquashfs
 
-    [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/archlinux-$device-$ui-$date.sqfs" ] && \
-        rm "$output_folder/archlinux-$device-$ui-$date.sqfs"
+    [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/armtix-$device-$ui-$date.sqfs" ] && \
+        rm "$output_folder/armtix-$device-$ui-$date.sqfs"
 
-    [ -f "$output_folder/archlinux-$device-$ui-$date.sqfs"  ] && {
+    [ -f "$output_folder/armtix-$device-$ui-$date.sqfs"  ] && {
         read -rp "Squashfs image already exist, delete it? (y/n) " yn
         case $yn in
-            [Yy]*) rm "$output_folder/archlinux-$device-$ui-$date.sqfs" ;;
+            [Yy]*) rm "$output_folder/armtix-$device-$ui-$date.sqfs" ;;
             [Nn]*) return ;;
             *) echo "Aborting." && exit 1 ;;
         esac; }
 
     mkdir -p "$temp"
     bsdtar -xpf "$output_folder/$rootfs_tarball" -C "$temp"
-    mksquashfs "$temp" "$output_folder/archlinux-$device-$ui-$date.sqfs"
+    mksquashfs "$temp" "$output_folder/armtix-$device-$ui-$date.sqfs"
     rm -rf "$temp"
 }
 
@@ -366,4 +393,5 @@ parse_args $@
 check_arch
 parse_presets
 init_rootfs
+read -p "OK ? - about to make  squash or image, based on osk var: $OSK_SDL"
 [ $OSK_SDL -gt 0 ] && make_squashfs || make_image

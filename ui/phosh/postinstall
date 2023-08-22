@@ -1,4 +1,4 @@
-systemctl enable bluetooth
-systemctl enable cups
-systemctl enable ModemManager
-systemctl enable phosh
+#dinitctl enable bluetooth
+#dinitctl enable cups
+#dinitctl enable ModemManager
+#dinitctl enable phosh

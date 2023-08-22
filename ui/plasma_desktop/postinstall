@@ -1,2 +1,2 @@
-systemctl enable cups
-systemctl enable sddm
+#dinitctl enable cups
+#dinitctl enable sddm

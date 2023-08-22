@@ -1,12 +1,3 @@
-Welcome to Arch Linux ARM!
+Welcome to Armtix!
 
-This is unofficial ARM build maintained by Dreemurrs Embedded Labs.
-
-To make a issue/pull request to our repo:
- * Issues: https://github.com/dreemurrs-embedded/Pine64-Arch/issues
- * Pull Requests: https://github.com/dreemurrs-embedded/Pine64-Arch/pulls
-
-Support can be provided from our chat rooms:
- * Matrix: #archmobile:kde.org
- * Telegram: @archmobile
-
+This is unofficial ARM build maintained.

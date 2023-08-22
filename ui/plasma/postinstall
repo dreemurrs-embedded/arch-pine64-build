@@ -1,6 +1,6 @@
 groupadd -r autologin
 gpasswd -a alarm autologin
-systemctl enable bluetooth
-systemctl enable cups
-systemctl enable ModemManager
-systemctl enable lightdm
+#dinitctl enable bluetooth
+#dinitctl enable cups
+#dinitctl enable ModemManager
+#dinitctl enable lightdm

@@ -15,7 +15,7 @@ date +%Y%m%d -s "REPLACEDATE" # this is changed by the make_rootfs script
 
 # Initialize the pacman keyring
 pacman-key --init
-pacman-key --populate archlinuxarm danctnix
+pacman-key --populate archlinuxarm danctnix armtix
 
 if [ -e "/usr/lib/initcpio/hooks/resizerootfs" ]; then
     rm /usr/lib/initcpio/hooks/resizerootfs
@@ -29,6 +29,7 @@ fi
 rm /usr/local/sbin/first_time_setup.sh
 rm /usr/lib/systemd/system/first_time_setup.service
 rm /usr/lib/systemd/system/basic.target.wants/first_time_setup.service
+sed -i '/first_time_setup/d' /etc/bash/bashrc.d/artix.bashrc
 
 if [ -e /sys/devices/platform/bootsplash.0/enabled ]; then
     echo 1 > /sys/devices/platform/bootsplash.0/enabled

@@ -124,7 +124,7 @@ done
 DEVICE="pinephone";
 # Download the image https://github.com/jackffmm/armtix-pine64/releases/tag/ or build it
 # and set the correct path and name.
-TARBALL="fde-files/rootfs-pinephone-barebone-20230823-osksdl.tar.gz"
+SQFSROOT="fde-files/armtix-pinephone-barebone-20230822.sqfs"
 # Required package is shipped, to updated it:
 # wget --quiet --show-progress -c -O fde-files/arch-install-scripts.tar.zst "https://archlinux.org/packages/extra/any/arch-install-scripts/download/"
 
@@ -210,13 +210,16 @@ sudo mount $ENCRYPART $TMPMOUNT
 sudo mkdir $TMPMOUNT/boot
 sudo mount $BOOTPART $TMPMOUNT/boot
 
-#sudo unsquashfs -f -d $TMPMOUNT $SQFSROOT
-sudo tar -xf $TARBALL $TMPMOUNT 
+sudo unsquashfs -f -d $TMPMOUNT $SQFSROOT
+#sudo tar -xf $TARBALL $TMPMOUNT 
 
 ./genfstab -U $TMPMOUNT | grep UUID | grep -v "swap" | sudo tee -a $TMPMOUNT/etc/fstab
 sudo sed -i "s:UUID=[0-9a-f-]*\s*/\s:/dev/mapper/cryptroot / :g" $TMPMOUNT/etc/fstab
 
+#is this necessary for tow-boot?
 sudo dd if=${TMPMOUNT}/boot/u-boot-sunxi-with-spl-${DEVICE}-552.bin of=${DISK_IMAGE} bs=8k seek=1
+#remove u-boot to use tow-boot
+sudo dd if=/dev/zero of=/dev/[DEVICE] bs=32k seek=4 count=1
 
 sudo umount -R $TMPMOUNT
 sudo cryptsetup close $ENCRYNAME

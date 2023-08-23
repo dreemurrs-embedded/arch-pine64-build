@@ -165,7 +165,6 @@ init_rootfs() {
             [Nn]*) return ;;
             *) echo "Aborting." && exit 1 ;;
         esac; }
-    read -p "OK ? - checks" #####################################################
 
     download_rootfs
     read -p "OK ? - download" #####################################################
@@ -215,11 +214,11 @@ pacman-key --populate archlinuxarm danctnix
 echo "FS2"
 pacman -Rsn --noconfirm linux-$arch linux-$arch-headers linux-$arch-lts linux-$arch-lts-headers
 echo "FS3"
-pacman -Syy  --noconfirm
+pacman -Sy  --noconfirm
 echo "FS4"
-pacman -S  --noconfirm --overwrite=* pacman pacman-contrib  
+pacman -S  --noconfirm --overwrite=* pacman pacman-contrib mkinitcpio
 echo "FS5"
-pacman -S  --noconfirm --overwrite=* archlinuxarm-keyring archlinuxarm-mirrorlist artix-keyring artix-mirrorlist artix-archlinux-support 
+pacman -S  --noconfirm --overwrite=* archlinuxarm-keyring archlinuxarm-mirrorlist artix-keyring artix-mirrorlist artix-archlinux-support
 echo "FS6"
 pacman -Syu  --noconfirm --overwrite=*
 echo "FS7"

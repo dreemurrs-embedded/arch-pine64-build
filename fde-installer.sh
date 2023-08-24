@@ -37,7 +37,7 @@ case $key in
                "	-h, --help		Print this help and exit." \
                "" \
                "This command requires: parted, curl, sudo, wget, tar, unzip," \
-               "mkfs.ext4, losetup." \
+               "mkfs.ext4, unsquashfs, losetup." \
                ""
 
         exit 0
@@ -76,7 +76,7 @@ check_dependency "cryptsetup"
 check_dependency "sudo"
 check_dependency "wget"
 check_dependency "tar"
-#check_dependency "unsquashfs"
+check_dependency "unsquashfs"
 check_dependency "mkfs.ext4"
 #check_dependency "mkfs.f2fs"
 #check_dependency "mkfs.btrfs"
@@ -120,6 +120,23 @@ done
 ///
 # end of commented part
 
+# Filesystem selection
+echo -e "\e[1mWhich filesystem would you like to use?\e[0m"
+select OPTION in "ext4" "btrfs"; do
+    case $OPTION in
+        "ext4" ) FILESYSTEM="ext4"; break;;
+        "btrfs" ) FILESYSTEM="btrfs"; break;;
+    esac
+done
+
+echo -e "\e[1mInstall u-boot? If you don't know install it.\e[0m"
+select OPTION in "yes" "no"; do
+    case $OPTION in
+        "yes" ) UBOOT="yes"; break;;
+        "no" ) UBOOT="no"; break;;
+    esac
+done
+
 # WORK IN PROGRESS
 DEVICE="pinephone";
 # Download the image https://github.com/jackffmm/armtix-pine64/releases/tag/ or build it
@@ -129,7 +146,7 @@ SQFSROOT="fde-files/armtix-pinephone-barebone-20230822.sqfs"
 # wget --quiet --show-progress -c -O fde-files/arch-install-scripts.tar.zst "https://archlinux.org/packages/extra/any/arch-install-scripts/download/"
 
 # Filesystem selection
-FILESYSTEM="ext4";
+#FILESYSTEM="ext4";
 #FILESYSTEM="btrfs";
 
 # Select flash target
@@ -175,12 +192,9 @@ chmod +x genfstab
 [ $FILESYSTEM = "ext4" ] && MKFS="mkfs.ext4"
 [ $FILESYSTEM = "btrfs" ] && MKFS="mkfs.btrfs"
 
-#sudo parted -a optimal ${DISK_IMAGE} mklabel msdos --script
 sudo parted -a optimal ${DISK_IMAGE} mklabel gpt --script
-#sudo parted -a optimal ${DISK_IMAGE} mkpart primary fat32 '0%' 2048MB --script
-sudo parted -a optimal ${DISK_IMAGE} mkpart boot ext4 70MB 1070MB --script
-#sudo parted -a optimal ${DISK_IMAGE} mkpart primary ext4 2048MB 100% --script
-sudo parted -a optimal ${DISK_IMAGE} mkpart system ext4 1070MB 100% --script
+sudo parted -a optimal ${DISK_IMAGE} mkpart boot ext4 5MB 1000MB --script
+sudo parted -a optimal ${DISK_IMAGE} mkpart system ext4 1005MB 100% --script
 sudo parted ${DISK_IMAGE} set 1 boot on --script
 
 # The first partition is the boot partition and the second one the root
@@ -193,10 +207,10 @@ ENCRYPART="/dev/mapper/$ENCRYNAME"
 
 echo "You'll now be asked to type in a new encryption key. DO NOT LOSE THIS!"
 
-# Generating LUKS header on a modern computer would make the container slow to unlock
-# on slower devices such as PinePhone.
-#
-# Unless you're happy with the phone taking an eternity to unlock, this is it for now.
+# Generating LUKS header on a modern computer would make the container not super quick
+# to unlock on slower devices such as PinePhone.
+# 
+# To make it faster:
 #sudo cryptsetup -q -y -v luksFormat --pbkdf-memory=20721 --pbkdf-parallel=4 --pbkdf-force-iterations=4 $ROOTPART
 sudo cryptsetup -q -y -v luksFormat $ROOTPART
 sudo cryptsetup open $ROOTPART $ENCRYNAME
@@ -211,19 +225,23 @@ sudo mkdir $TMPMOUNT/boot
 sudo mount $BOOTPART $TMPMOUNT/boot
 
 sudo unsquashfs -f -d $TMPMOUNT $SQFSROOT
-#sudo tar -xf $TARBALL $TMPMOUNT 
 
 ./genfstab -U $TMPMOUNT | grep UUID | grep -v "swap" | sudo tee -a $TMPMOUNT/etc/fstab
 sudo sed -i "s:UUID=[0-9a-f-]*\s*/\s:/dev/mapper/cryptroot / :g" $TMPMOUNT/etc/fstab
 
-#is this necessary for tow-boot?
-sudo dd if=${TMPMOUNT}/boot/u-boot-sunxi-with-spl-${DEVICE}-552.bin of=${DISK_IMAGE} bs=8k seek=1
-#remove u-boot to use tow-boot
-sudo dd if=/dev/zero of=/dev/[DEVICE] bs=32k seek=4 count=1
+if [ "$UBOOT" = "yes" ]; then
+	sudo dd if=/dev/zero of=/dev/[DEVICE] bs=1024 seek=8 oflag=sync
+fi
+
+# Note u-boot on mbr:
+#sudo dd if=${TMPMOUNT}/boot/u-boot-sunxi-with-spl-${DEVICE}-552.bin of=${DISK_IMAGE} bs=8k seek=1
+# To remove u-boot, e.g. to use tow-boot, on gpt:
+#sudo dd if=/dev/zero of=/dev/[DEVICE] bs=32k seek=4 count=1
+# mbr:
+#sudo dd if=/dev/zero of=/dev/[DEVICE] bs=8k seek=1 count=4
 
 sudo umount -R $TMPMOUNT
 sudo cryptsetup close $ENCRYNAME
-
 
 echo -e "\e[1mCleaning up working directory...\e[0m"
 sudo rm -f arch-install-scripts.tar.zst || true

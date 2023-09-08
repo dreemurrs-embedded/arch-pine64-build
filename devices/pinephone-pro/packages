@@ -5,8 +5,8 @@ dialog
 dosfstools
 f2fs-tools
 iw
-netctl
 networkmanager
+networkmanager-dinit
 pv
 rfkill
 sudo
@@ -14,3 +14,5 @@ v4l-utils
 wpa_supplicant
 xz
 zramswap
+openssh
+openssh-dinit

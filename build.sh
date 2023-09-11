@@ -5,7 +5,7 @@ set -e
 
 SUPPORTED_ARCHES=(aarch64 armv7)
 NOCONFIRM=0
-OSK_SDL=0
+FDE=0
 NO_BOOTLOADER=0
 use_pipewire=0
 output_folder="build"
@@ -17,7 +17,7 @@ date=$(date +%Y%m%d)
 
 error() { echo -e "\e[41m\e[5mERROR:\e[49m\e[25m $1" && exit 1; }
 check_dependency() { [ $(which $1) ] || error "$1 not found. Please make sure it is installed and on your PATH."; }
-usage() { error "$0 [-a ARCHITECTURE] [-d device] [-u ui] [-h hostname] [--osk-sdl] [--noconfirm] [--cachedir directory] [--no-cachedir]"; }
+usage() { error "$0 [-a ARCHITECTURE] [-d device] [-u ui] [-h hostname] [--fde] [--noconfirm] [--cachedir directory] [--no-cachedir]"; }
 cleanup() {
     trap '' EXIT
     trap '' INT
@@ -51,7 +51,7 @@ parse_args() {
             -u|--ui) ui=$2; shift ;;
             -h|--hostname) hostname=$2; shift ;;
             --noconfirm) NOCONFIRM=1;;
-            --osk-sdl) OSK_SDL=1;;
+            --fde) FDE=1;;
             --cachedir) cachedir=$2; shift ;;
             --no-cachedir) cachedir= ;;
             *) usage ;;
@@ -149,9 +149,9 @@ do_chroot() {
 }
 
 init_rootfs() {
-    if [ $OSK_SDL -gt 0 ]; then
-        rootfs_tarball="rootfs-$device-$ui-$date-osksdl.tar.gz"
-        packages_ui+=( osk-sdl )
+    if [ $FDE -gt 0 ]; then
+        rootfs_tarball="rootfs-$device-$ui-$date-fde.tar.gz"
+        #packages_ui+=( osk-sdl )
     else
         rootfs_tarball="rootfs-$device-$ui-$date.tar.gz"
     fi
@@ -201,12 +201,16 @@ init_rootfs() {
     wget -r -nd -l 1 -A "archlinux-keyring-*any.pkg.tar.xz" https://fl.us.mirror.archlinuxarm.org/aarch64/core/
     mv archlinux-keyring-*any.pkg.tar.xz "$output_folder/archlinux-keyring.tar.xz"
     tar -C "$temp" -xf "$output_folder/archlinux-keyring.tar.xz"
+    if [ $FDE -gt 0 ]; then
+    	cp fde-files/unl0kr-*pkg.tar* "$temp"    
+    fi
     ls "$temp/usr/share/pacman/keyrings"
     cat > "$temp/second-phase" <<EOF
 #!/bin/bash
 set -e
-dhcpcd
-ntpdate pool.ntp.org
+# error here, running it from a PineePhone
+#dhcpcd
+#ntpdate pool.ntp.org
 read -p "OK ? - dhcp and time" ###############
 pacman-key --init
 echo "FS1"
@@ -214,13 +218,13 @@ pacman-key --populate archlinuxarm danctnix
 echo "FS2"
 pacman -Rsn --noconfirm linux-$arch linux-$arch-headers linux-$arch-lts linux-$arch-lts-headers
 echo "FS3"
-pacman -Sy  --noconfirm
+pacman -Sy --noconfirm
 echo "FS4"
-pacman -S  --noconfirm --overwrite=* pacman pacman-contrib mkinitcpio
+pacman -S --noconfirm --overwrite=* pacman pacman-contrib mkinitcpio
 echo "FS5"
-pacman -S  --noconfirm --overwrite=* archlinuxarm-keyring archlinuxarm-mirrorlist artix-keyring artix-mirrorlist artix-archlinux-support
+pacman -S --noconfirm --overwrite=* archlinuxarm-keyring archlinuxarm-mirrorlist artix-keyring artix-mirrorlist artix-archlinux-support
 echo "FS6"
-pacman -Syu  --noconfirm --overwrite=*
+pacman -Syu --noconfirm --overwrite=*
 echo "FS7"
 pacman -S --noconfirm --overwrite=* --needed ${packages_device[@]} ${packages_ui[@]}
 echo "FS8"
@@ -241,6 +245,11 @@ if [ -e /etc/sudoers ]; then
     sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 fi
 
+if [ -e /unl0kr-*pkg.tar* ]; then
+	pacman -U --noconfirm --needed unl0kr-*pkg.tar*
+	rm unl0kr-*pkg.tar*
+fi
+    
 cat << FOE | passwd armtix
 armtix
 armtix
@@ -265,13 +274,13 @@ read -p "OK ? - echo of second-phase" ##########################################
     [ -d "devices/$device/overlays/base" ] && cp -r devices/$device/overlays/base/* "$temp/"
     [ -d "devices/$device/overlays/$ui" ] && cp -r devices/$device/overlays/$ui/* "$temp/"
 
-    if [ -e "$temp/usr/lib/initcpio/hooks/resizerootfs" ] && [ $OSK_SDL -gt 0 ]; then
+    if [ -e "$temp/usr/lib/initcpio/hooks/resizerootfs" ] && [ $FDE -gt 0 ]; then
         rm -f $temp/usr/lib/initcpio/hooks/resizerootfs
         rm -f $temp/usr/lib/initcpio/install/resizerootfs
     fi
 
     [ -e "$temp/usr/lib/initcpio/hooks/resizerootfs" ] && sed -i 's/fsck/resizerootfs fsck/g' "$temp/etc/mkinitcpio.conf"
-    [ -e "$temp/usr/lib/initcpio/hooks/osk-sdl" ] && sed -i 's/fsck/osk-sdl fsck/g' "$temp/etc/mkinitcpio.conf"
+    [ -e "$temp/usr/lib/initcpio/hooks/unl0kr" ] && sed -i 's/fsck/unl0kr fsck/g' "$temp/etc/mkinitcpio.conf"
     [ -e "$temp/usr/lib/initcpio/install/bootsplash-danctnix" ] && sed -i 's/fsck/fsck bootsplash-danctnix/g' "$temp/etc/mkinitcpio.conf"
 
     sed -i "s/REPLACEDATE/$date/g" "$temp/usr/local/sbin/first_time_setup.sh"
@@ -392,5 +401,5 @@ parse_args $@
 check_arch
 parse_presets
 init_rootfs
-read -p "OK ? - about to make  squash or image, based on osk var: $OSK_SDL"
-[ $OSK_SDL -gt 0 ] && make_squashfs || make_image
+read -p "OK ? - about to make  squash or image, based on fde var: $FDE"
+[ $FDE -gt 0 ] && make_squashfs || make_image

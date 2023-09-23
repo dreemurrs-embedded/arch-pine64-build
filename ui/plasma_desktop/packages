@@ -9,9 +9,11 @@ dolphin
 dolphin-plugins
 elisa
 filelight
+glibc-locales
 gst-plugins-bad
 gst-plugins-good
 gwenview
+iio-sensor-proxy
 kalendar
 kalk
 kate

@@ -1,10 +1,6 @@
 #!/usr/bin/ash
 
 run_hook() {
-    if [ -e /sys/devices/platform/bootsplash.0/enabled ]; then
-        echo 0 > /sys/devices/platform/bootsplash.0/enabled
-    fi
-
     DEVICE=$(echo $root | sed 's/..$//')
     echo "The current storage device is $DEVICE"
 
@@ -32,10 +28,6 @@ EOF
     partx -u ${DEVICE}
     $FSRESIZER ${DEVICE}p2
     sync
-
-    if [ -e /sys/devices/platform/bootsplash.0/enabled ]; then
-        echo 1 > /sys/devices/platform/bootsplash.0/enabled
-    fi
 }
 
 # vim: set ft=sh ts=4 sw=4 et:

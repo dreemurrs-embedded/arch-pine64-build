@@ -17,7 +17,7 @@ if [ -e "/usr/lib/initcpio/hooks/resizerootfs" ]; then
     rm /usr/lib/initcpio/hooks/resizerootfs
     rm /usr/lib/initcpio/install/resizerootfs
 
-    sed -i 's/resizerootfs//g' /etc/mkinitcpio.conf
+    sed -i '/^HOOKS=/s/resizerootfs //g' /etc/mkinitcpio.conf
     mkinitcpio -P
 fi
 

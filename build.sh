@@ -197,6 +197,7 @@ init_rootfs() {
 set -e
 pacman-key --init
 pacman-key --populate archlinuxarm danctnix
+pacman-key --lsign-key 68B3537F39A313B3E574D06777193F152BDBE6A6
 pacman -Rsn --noconfirm linux-$arch
 pacman -Syu --noconfirm --overwrite=*
 pacman -S --noconfirm --overwrite=* --needed ${packages_device[@]} ${packages_ui[@]}

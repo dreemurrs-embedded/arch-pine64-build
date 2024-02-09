@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2021-2023 - Dreemurrs Embedded Labs / DanctNIX Community
+# Copyright 2021-2024 - Dreemurrs Embedded Labs / DanctNIX Community
 
 # This is a first time boot script, it is supposed to self destruct after the script has finished.
 
@@ -12,6 +12,7 @@ date +%Y%m%d -s "REPLACEDATE" # this is changed by the make_rootfs script
 # Initialize the pacman keyring
 pacman-key --init
 pacman-key --populate archlinuxarm danctnix
+pacman-key --lsign-key 68B3537F39A313B3E574D06777193F152BDBE6A6
 
 if [ -e "/usr/lib/initcpio/hooks/resizerootfs" ]; then
     rm /usr/lib/initcpio/hooks/resizerootfs

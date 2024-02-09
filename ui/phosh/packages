@@ -1,4 +1,3 @@
-chatty
 cups
 cups-filters
 danctnix-phosh-ui-meta
@@ -8,23 +7,24 @@ eog
 evince-mobile
 fwupd
 geary
-gedit
 ghostscript
 glibc-locales
 gnome-calculator
 gnome-calendar-mobile
 gnome-calls
 gnome-clocks-mobile
+gnome-console
 gnome-contacts-mobile
 gnome-maps
 gnome-sound-recorder
+gnome-text-editor
 gnome-usage-mobile
 gnome-weather
 gsfonts
 gst-plugins-bad
 gst-plugins-good
 gtherm
-kgx
+gtk3-mobile
 lollypop
 megapixels
 mesa
@@ -34,4 +34,5 @@ networkmanager-openvpn
 noto-fonts-emoji
 portfolio-file-manager
 postprocessd
+purism-chatty
 xdg-user-dirs

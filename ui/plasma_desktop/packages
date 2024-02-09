@@ -13,7 +13,6 @@ gst-plugins-bad
 gst-plugins-good
 gwenview
 iio-sensor-proxy
-kalendar
 kalk
 kate
 kdeconnect
@@ -36,6 +35,7 @@ kwalletmanager
 kweather
 maliit-keyboard
 mbox-importer
+merkuro
 mesa
 networkmanager-openvpn
 noto-fonts

@@ -25,4 +25,4 @@ fi
 # Cleanup
 rm /usr/local/sbin/first_time_setup.sh
 rm /usr/lib/systemd/system/first_time_setup.service
-rm /usr/lib/systemd/system/basic.target.wants/first_time_setup.service
+rm /usr/lib/systemd/system/sysinit.target.wants/first_time_setup.service

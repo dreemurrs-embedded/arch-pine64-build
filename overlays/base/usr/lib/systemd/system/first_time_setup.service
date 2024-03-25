@@ -1,6 +1,6 @@
 [Unit]
 Description=First Time Setup
-Before=basic.target getty.target shutdown.target
+Before=sysinit.target getty.target shutdown.target
 Conflicts=shutdown.target
 DefaultDependencies=no
 
@@ -10,4 +10,4 @@ ExecStart=/usr/local/sbin/first_time_setup.sh
 StandardOutput=tty
 
 [Install]
-WantedBy=basic.target
+WantedBy=sysinit.target

@@ -42,12 +42,11 @@ noto-fonts
 noto-fonts-cjk
 noto-fonts-emoji
 okular
-packagekit-qt5
+packagekit-qt6
 pim-data-exporter
 pim-sieve-editor
 plasma
-plasma-wayland-session
-qt5-virtualkeyboard
+qt6-virtualkeyboard
 sddm
 signon-kwallet-extension
 spectacle

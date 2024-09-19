@@ -1,0 +1,47 @@
+name: Build and Install
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+
+jobs:
+    build:
+        strategy:
+          matrix:
+            settings:
+            - platform: 'ubuntu-latest' # for Tauri v1 you could replace this with ubuntu-20.04.
+            - platform: 'self-hosted'
+            include:
+              - device: [pinetab2]
+                ui: [plasma_desktop]
+              - device: [pinephone]
+                ui: [phosh, plasma, sxmo]
+              - device: [pinephonepro]
+                ui: [phosh, plasma, sxmo]
+            
+        runs-on: ubuntu-latest #${{ matrix.settings.platform }#}
+        steps:
+          - name: Checkout repository
+            uses: actions/checkout@v3
+
+          #- name: Install tools
+          #  if: matrix.settings.platform == 'self-hosted'
+          #  run: |
+          #    sudo pacman -Syu --noconfirm
+          #    sudo pacman -S --noconfirm devtools \
+          #      lsof \
+          #      wget \
+          #      fdisk \
+          #      bsdtar
+          - name: Install tools
+            run: |
+              sudo apt-get update
+              sudo apt-get install -y lsof wget util-linux libarchive-tools e2fsprogs dosfstools arch-install-scripts fdisk
+          - name: Run build script
+            run: |
+              chmod +x ./build.sh
+              ./build.sh -u plasma_desktop -d pinetab2 -a aarch64

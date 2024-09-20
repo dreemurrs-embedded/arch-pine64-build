@@ -1,148 +1,59 @@
 name: Build and Install
 
 on:
-    workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
-    build_phosh:
-        strategy:
-          matrix:
-            include:
-              - device: pinephone
-                ui: phosh
-              - device: pinephonepro
-                ui: phosh
-        runs-on: ubuntu-latest #${{ matrix.settings.platform }#}
-        steps:
-          - name: Checkout repository
-            uses: actions/checkout@v3
+  build:
+    strategy:
+      matrix:
+        include:
+          - device: [pinetab2]
+            ui: [plasma_desktop]
+          - device: [pinetab]
+            ui: [plasma_desktop]
+          - device: [pinephone]
+            ui: [phosh, plasma, sxmo]
+          - device: [pinephonepro]
+            ui: [phosh, plasma, sxmo]
+      
+    runs-on: ubuntu-latest #${{ matrix.platform }#}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-          #- name: Install tools
-          #  if: matrix.settings.platform == 'self-hosted'
-          #  run: |
-          #    sudo pacman -Syu --noconfirm
-          #    sudo pacman -S --noconfirm devtools \
-          #      lsof \
-          #      wget \
-          #      fdisk \
-          #      bsdtar
-          - name: Install tools
-            run: |
-              sudo apt-get update
-              sudo apt-get install -y lsof wget util-linux libarchive-tools e2fsprogs dosfstools arch-install-scripts fdisk
-          - name: Run build script
-            run: |
-              chmod +x ./build.sh
-              ./build.sh -u phosh -d ${{ matrix.device }} -a aarch64
-              mv build/*.img ./${{ matrix.device }}-phosh-archlinux.img
-          - name: Upload artifact
-            uses: actions/upload-artifact@v3
-            with:
-              name: ${{ matrix.device }}-phosh-archlinux.img
-              path: ./${{ matrix.device }}-phosh-archlinux.img
-    build_plasma_desktop:
-        strategy:
-          matrix:
-            include:
-              - device: pinetab2
-              - device: pinetab
-            
-        runs-on: ubuntu-latest #${{ matrix.settings.platform }#}
-        steps:
-          - name: Checkout repository
-            uses: actions/checkout@v3
+      #- name: Install tools
+      #  if#: matrix.platform == #'self-hosted'
+      #  run: |
+      #    sudo pacman -Syu --noconfirm
+      #    sudo pacman -S --noconfirm devtools \
+      #      lsof \
+      #      wget \
+      #      fdisk \
+      #      bsdtar
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lsof wget util-linux libarchive-tools e2fsprogs dosfstools arch-install-scripts fdisk qemu-user-static
+      - name: Run build script
+        run: |
+          chmod +x ./build.sh
+          sudo ./build.sh -u plasma_desktop -d pinetab2 -a aarch64
+      - name: Set environment variables
+        run: |
+          echo "DEVICE=${{ matrix.device }}" >> $GITHUB_ENV
+          echo "UI=${{ matrix.ui }}" >> $GITHUB_ENV
 
-          #- name: Install tools
-          #  if: matrix.settings.platform == 'self-hosted'
-          #  run: |
-          #    sudo pacman -Syu --noconfirm
-          #    sudo pacman -S --noconfirm devtools \
-          #      lsof \
-          #      wget \
-          #      fdisk \
-          #      bsdtar
-          - name: Install tools
-            run: |
-              sudo apt-get update
-              sudo apt-get install -y lsof wget util-linux libarchive-tools e2fsprogs dosfstools arch-install-scripts fdisk
-          - name: Run build script
-            run: |
-              chmod +x ./build.sh
-              ./build.sh -u plasma_desktop -d ${{ matrix.device }} -a aarch64
-              mv build/*.img ./${{ matrix.device }}-plasma-desktop-archlinux.img
-          - name: Upload artifact
-            uses: actions/upload-artifact@v3
-            with:
-              name: ${{ matrix.device }}-plasma-desktop-archlinux.img
-              path: ./${{ matrix.device }}-plasma-desktop-archlinux.img
-    build_sxmo:
-        strategy:
-          matrix:
-            include:
-              - device: pinephone
-              - device: pinephonepro
-            
-        runs-on: ubuntu-latest #${{ matrix.settings.platform }#}
-        steps:
-          - name: Checkout repository
-            uses: actions/checkout@v3
+      - name: Run build script
+        run: |
+          chmod +x ./build.sh
+          sudo ./build.sh -u $UI -d $DEVICE -a aarch64
 
-          #- name: Install tools
-          #  if: matrix.settings.platform == 'self-hosted'
-          #  run: |
-          #    sudo pacman -Syu --noconfirm
-          #    sudo pacman -S --noconfirm devtools \
-          #      lsof \
-          #      wget \
-          #      fdisk \
-          #      bsdtar
-          - name: Install tools
-            run: |
-              sudo apt-get update
-              sudo apt-get install -y lsof wget util-linux libarchive-tools e2fsprogs dosfstools arch-install-scripts fdisk
-          - name: Run build script
-            run: |
-              chmod +x ./build.sh
-              ./build.sh -u sxmo -d ${{ matrix.device }} -a aarch64
-              mv build/*.img ./${{ matrix.device }}-sxmo-archlinux.img
-          - name: Upload artifact
-            uses: actions/upload-artifact@v3
-            with:
-              name: ${{ matrix.device }}-sxmo-archlinux.img
-              path: ./${{ matrix.device }}-sxmo-archlinux.img
-    build_plasma_mobile:
-        strategy:
-          matrix:
-            include:
-              - device: pinephone
-              - device: pinephonepro
-            
-        runs-on: ubuntu-latest #${{ matrix.settings.platform }#}
-        steps:
-          - name: Checkout repository
-            uses: actions/checkout@v3
-
-          #- name: Install tools
-          #  if: matrix.settings.platform == 'self-hosted'
-          #  run: |
-          #    sudo pacman -Syu --noconfirm
-          #    sudo pacman -S --noconfirm devtools \
-          #      lsof \
-          #      wget \
-          #      fdisk \
-          #      bsdtar
-          - name: Install tools
-            run: |
-              sudo apt-get update
-              sudo apt-get install -y lsof wget util-linux libarchive-tools e2fsprogs dosfstools arch-install-scripts fdisk
-          - name: Run build script
-            run: |
-              chmod +x ./build.sh
-              ./build.sh -u plasma -d ${{ matrix.device }} -a aarch64
-              mv build/*.img ./${{ matrix.device }}-plasma-mobile-archlinux.img
-          - name: Upload artifact
-            uses: actions/upload-artifact@v3
-            with:
-              name: ${{ matrix.device }}-plasma-mobile-archlinux.img
-              path: ./${{ matrix.device }}-plasma-mobile-archlinux.img
-          
+      - name: Move image file
+        run: |
+          mv build/*.img ./${DEVICE}-${UI}-archlinux.img
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.device }}-${{ matrix.ui }}-archlinux.img
+          path: ./${{ matrix.device }}-${{ matrix.ui }}-archlinux.img

@@ -46,7 +46,6 @@ packagekit-qt5
 pim-data-exporter
 pim-sieve-editor
 plasma
-plasma-wayland-session
 qt5-virtualkeyboard
 sddm
 signon-kwallet-extension

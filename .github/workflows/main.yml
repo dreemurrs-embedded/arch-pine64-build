@@ -9,8 +9,9 @@ jobs:
           matrix:
             include:
               - device: pinephone
+                ui: phosh
               - device: pinephonepro
-            
+                ui: phosh
         runs-on: ubuntu-latest #${{ matrix.settings.platform }#}
         steps:
           - name: Checkout repository
@@ -33,7 +34,7 @@ jobs:
             run: |
               chmod +x ./build.sh
               ./build.sh -u phosh -d ${{ matrix.device }} -a aarch64
-              mv build/*.img ./${{device}}-phosh-archlinux.img
+              mv build/*.img ./${{ matrix.device }}-phosh-archlinux.img
           - name: Upload artifact
             uses: actions/upload-artifact@v3
             with:
@@ -68,7 +69,7 @@ jobs:
             run: |
               chmod +x ./build.sh
               ./build.sh -u plasma_desktop -d ${{ matrix.device }} -a aarch64
-              mv build/*.img ./${{device}}-plasma-desktop-archlinux.img
+              mv build/*.img ./${{ matrix.device }}-plasma-desktop-archlinux.img
           - name: Upload artifact
             uses: actions/upload-artifact@v3
             with:
@@ -103,7 +104,7 @@ jobs:
             run: |
               chmod +x ./build.sh
               ./build.sh -u sxmo -d ${{ matrix.device }} -a aarch64
-              mv build/*.img ./${{device}}-sxmo-archlinux.img
+              mv build/*.img ./${{ matrix.device }}-sxmo-archlinux.img
           - name: Upload artifact
             uses: actions/upload-artifact@v3
             with:
@@ -138,7 +139,7 @@ jobs:
             run: |
               chmod +x ./build.sh
               ./build.sh -u plasma -d ${{ matrix.device }} -a aarch64
-              mv build/*.img ./${{device}}-plasma-mobile-archlinux.img
+              mv build/*.img ./${{ matrix.device }}-plasma-mobile-archlinux.img
           - name: Upload artifact
             uses: actions/upload-artifact@v3
             with:

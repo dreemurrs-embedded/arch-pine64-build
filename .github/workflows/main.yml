@@ -68,6 +68,7 @@ jobs:
           name: pinetab2-barebone-archlinux.img  
           path: pinetab2-barebone-archlinux.img               
   build_pinephone_phosh:
+    needs: build_universal-barebone
     runs-on: ubuntu-latest #${{ matrix.platform }#}
     steps:
       - name: Checkout repository

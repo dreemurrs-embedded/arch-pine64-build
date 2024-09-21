@@ -1,0 +1,253 @@
+name: Build and Install
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_universal-barebone:
+    runs-on: ubuntu-latest #${{ matrix.platform }#}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      #- name: Install tools
+      #  if#: matrix.platform == #'self-hosted'
+      #  run: |
+      #    sudo pacman -Syu --noconfirm
+      #    sudo pacman -S --noconfirm devtools \
+      #      lsof \
+      #      wget \
+      #      fdisk \
+      #      bsdtar
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lsof wget util-linux libarchive-tools e2fsprogs dosfstools arch-install-scripts fdisk qemu-user-static
+      - name: Run build script
+        run: |
+          chmod +x ./build.sh
+          sudo ./build.sh -u barebone -d pinetab -a aarch64
+
+      - name: Move image file
+        run: |
+          mv build/*.img ./pinetab-barebone-archlinux.img
+      - name: Run build script
+        run: |
+          chmod +x ./build.sh
+          sudo ./build.sh -u barebone -d pinetab -a aarch64
+  
+      - name: Move image file
+        run: |
+          mv build/*.img ./pinephone-barebone-archlinux.img
+      - name: Run build script
+        run: |
+          chmod +x ./build.sh
+          sudo ./build.sh -u barebone -d pinephonepro -a aarch64
+  
+      - name: Move image file
+        run: |
+            mv build/*.img ./pinephonepro-barebone-archlinux.img
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pinetab-barebone-archlinux.img
+          path: pinetab-barebone-archlinux.img 
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pinephone-barebone-archlinux.img
+          path: pinephone-barebone-archlinux.img
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pinephonepro-barebone-archlinux.img
+          path: pinephonepro-barebone-archlinux.img
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pinetab2-barebone-archlinux.img  
+          path: pinetab2-barebone-archlinux.img               
+  build_pinephone_phosh:
+    runs-on: ubuntu-latest #${{ matrix.platform }#}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      #- name: Install tools
+      #  if#: matrix.platform == #'self-hosted'
+      #  run: |
+      #    sudo pacman -Syu --noconfirm
+      #    sudo pacman -S --noconfirm devtools \
+      #      lsof \
+      #      wget \
+      #      fdisk \
+      #      bsdtar
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lsof wget util-linux libarchive-tools e2fsprogs dosfstools arch-install-scripts fdisk qemu-user-static
+      - name: Run build script
+        run: |
+          chmod +x ./build.sh
+          sudo ./build.sh -u phosh -d pinephone -a aarch64
+
+      - name: Move image file
+        run: |
+          mv build/*.img ./pinephone-phosh-archlinux.img
+        
+      - name: Run build script
+        run: |
+          chmod +x ./build.sh
+          sudo ./build.sh -u phosh -d pinephonepro -a aarch64
+  
+      - name: Move image file
+        run: |
+            mv build/*.img ./pinephonepro-phosh-archlinux.img
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pinephone-phosh-archlinux.img
+          path: pinephone-phosh-archlinux.img
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pinephonepro-phosh-archlinux.img
+          path: pinephonepro-phosh-archlinux.img  
+  build_pinephone_plasma:
+    runs-on: ubuntu-latest #${{ matrix.platform }#}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      #- name: Install tools
+      #  if#: matrix.platform == #'self-hosted'
+      #  run: |
+      #    sudo pacman -Syu --noconfirm
+      #    sudo pacman -S --noconfirm devtools \
+      #      lsof \
+      #      wget \
+      #      fdisk \
+      #      bsdtar
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lsof wget util-linux libarchive-tools e2fsprogs dosfstools arch-install-scripts fdisk qemu-user-static
+      - name: Run build script
+        run: |
+          chmod +x ./build.sh
+          sudo ./build.sh -u plasma -d pinephone -a aarch64
+
+      - name: Move image file
+        run: |
+          mv build/*.img ./pinephone-plasma-archlinux.img
+        
+      - name: Run build script
+        run: |
+          chmod +x ./build.sh
+          sudo ./build.sh -u plasma -d pinephonepro -a aarch64
+  
+      - name: Move image file
+        run: |
+            mv build/*.img ./pinephonepro-plasma-archlinux.img
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pinephone-plasma-archlinux.img
+          path: pinephone-plasma-archlinux.img  
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pinephonepro-plasma-archlinux.img
+          path: pinephonepro-plasma-archlinux.img        
+  build_pinephone_sxmo:
+    runs-on: ubuntu-latest #${{ matrix.platform }#}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      #- name: Install tools
+      #  if#: matrix.platform == #'self-hosted'
+      #  run: |
+      #    sudo pacman -Syu --noconfirm
+      #    sudo pacman -S --noconfirm devtools \
+      #      lsof \
+      #      wget \
+      #      fdisk \
+      #      bsdtar
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lsof wget util-linux libarchive-tools e2fsprogs dosfstools arch-install-scripts fdisk qemu-user-static
+      - name: Run build script
+        run: |
+          chmod +x ./build.sh
+          sudo ./build.sh -u sxmo -d pinephone -a aarch64
+
+      - name: Move image file
+        run: |
+          mv build/*.img ./pinephone-sxmo-archlinux.img
+        
+      - name: Run build script
+        run: |
+          chmod +x ./build.sh
+          sudo ./build.sh -u sxmo -d pinephonepro -a aarch64
+  
+      - name: Move image file
+        run: |
+            mv build/*.img ./pinephonepro-sxmo-archlinux.img
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pinephone-sxmo-archlinux.img
+          path: pinephone-sxmo-archlinux.img
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pinephonepro-sxmo-archlinux.img
+          path: pinephonepro-sxmo-archlinux.img
+  build_pinetab_plasma_desktop:
+    runs-on: ubuntu-latest #${{ matrix.platform }#}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      #- name: Install tools
+      #  if#: matrix.platform == #'self-hosted'
+      #  run: |
+      #    sudo pacman -Syu --noconfirm
+      #    sudo pacman -S --noconfirm devtools \
+      #      lsof \
+      #      wget \
+      #      fdisk \
+      #      bsdtar
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lsof wget util-linux libarchive-tools e2fsprogs dosfstools arch-install-scripts fdisk qemu-user-static
+      - name: Run build script
+        run: |
+          chmod +x ./build.sh
+          sudo ./build.sh -u plasma_desktop -d pinetab -a aarch64
+
+      - name: Move image file
+        run: |
+          mv build/*.img ./pinetab-plasma_desktop-archlinux.img
+        
+      - name: Run build script
+        run: |
+          chmod +x ./build.sh
+          sudo ./build.sh -u plasma_desktop -d pinetab2 -a aarch64
+  
+      - name: Move image file
+        run: |
+            mv build/*.img ./pinetab2-plasma_desktop-archlinux.img
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pinetab-plasma_desktop-archlinux.img
+          path: pinetab-plasma_desktop-archlinux.img
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pinetab2-plasma_desktop-archlinux.img
+          path: pinetab2-plasma_desktop-archlinux.img                  

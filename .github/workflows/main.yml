@@ -42,7 +42,7 @@ jobs:
       - name: Run build script
         run: |
           chmod +x ./build.sh
-          sudo ./build.sh -u barebone -d pinephonepro -a aarch64
+          printf 'y\n' | sudo ./build.sh -u barebone -d pinephonepro -a aarch64
   
       - name: Move image file
         run: |
@@ -99,7 +99,7 @@ jobs:
       - name: Run build script
         run: |
           chmod +x ./build.sh
-          sudo ./build.sh -u phosh -d pinephonepro -a aarch64
+          printf 'y\n' | sudo ./build.sh -u phosh -d pinephonepro -a aarch64
   
       - name: Move image file
         run: |
@@ -146,7 +146,7 @@ jobs:
       - name: Run build script
         run: |
           chmod +x ./build.sh
-          sudo ./build.sh -u plasma -d pinephonepro -a aarch64
+          printf 'y\n' | sudo ./build.sh -u plasma -d pinephonepro -a aarch64
   
       - name: Move image file
         run: |
@@ -193,7 +193,7 @@ jobs:
       - name: Run build script
         run: |
           chmod +x ./build.sh
-          sudo ./build.sh -u sxmo -d pinephonepro -a aarch64
+          printf 'y\n' | sudo ./build.sh -u sxmo -d pinephonepro -a aarch64
   
       - name: Move image file
         run: |
@@ -240,7 +240,7 @@ jobs:
       - name: Run build script
         run: |
           chmod +x ./build.sh
-          sudo ./build.sh -u plasma_desktop -d pinetab2 -a aarch64
+          printf 'y\n' |  sudo ./build.sh -u plasma_desktop -d pinetab2 -a aarch64
   
       - name: Move image file
         run: |

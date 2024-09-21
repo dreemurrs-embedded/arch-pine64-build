@@ -115,6 +115,7 @@ jobs:
           name: pinephonepro-phosh-archlinux.img
           path: pinephonepro-phosh-archlinux.img  
   build_pinephone_plasma:
+    needs: build_universal-barebone
     runs-on: ubuntu-latest #${{ matrix.platform }#}
     steps:
       - name: Checkout repository
@@ -161,6 +162,7 @@ jobs:
           name: pinephonepro-plasma-archlinux.img
           path: pinephonepro-plasma-archlinux.img        
   build_pinephone_sxmo:
+    needs: build_universal-barebone
     runs-on: ubuntu-latest #${{ matrix.platform }#}
     steps:
       - name: Checkout repository
@@ -207,6 +209,7 @@ jobs:
           name: pinephonepro-sxmo-archlinux.img
           path: pinephonepro-sxmo-archlinux.img
   build_pinetab_plasma_desktop:
+    needs: build_universal-barebone
     runs-on: ubuntu-latest #${{ matrix.platform }#}
     steps:
       - name: Checkout repository

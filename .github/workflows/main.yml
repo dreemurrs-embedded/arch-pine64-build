@@ -87,10 +87,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y lsof wget util-linux libarchive-tools e2fsprogs dosfstools arch-install-scripts fdisk qemu-user-static
-      - name: Run build script
-        run: |
-          chmod +x ./build.sh
-          sudo ./build.sh -u plasma_desktop -d pinetab2 -a aarch64
       - name: Set environment variables
         run: |
           echo "DEVICE=${{ matrix.device }}" >> $GITHUB_ENV

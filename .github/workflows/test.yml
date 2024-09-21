@@ -41,7 +41,7 @@ jobs:
 
       - name: Move image file
         run: |
-          mv build/*.img ./${DEVICE}-${UI}-archlinux.img
+          mv build/*.img ./${{ matrix.device }}-${{ matrix.ui }}-archlinux.img
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:

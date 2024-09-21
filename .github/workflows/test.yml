@@ -10,7 +10,6 @@ jobs:
         include:
           - device: pinetab2
             ui: maui
-          - device: pinetab
       
     runs-on: ubuntu-latest #${{ matrix.platform }#}
     steps:

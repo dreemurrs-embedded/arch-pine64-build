@@ -1,0 +1,54 @@
+name: Test Maui
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_tabs:
+    strategy:
+      matrix:
+        include:
+          - device: pinetab2
+            ui: maui
+          - device: pinetab
+      
+    runs-on: ubuntu-latest #${{ matrix.platform }#}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      #- name: Install tools
+      #  if#: matrix.platform == #'self-hosted'
+      #  run: |
+      #    sudo pacman -Syu --noconfirm
+      #    sudo pacman -S --noconfirm devtools \
+      #      lsof \
+      #      wget \
+      #      fdisk \
+      #      bsdtar
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lsof wget util-linux libarchive-tools e2fsprogs dosfstools arch-install-scripts fdisk qemu-user-static
+      - name: Run build script
+        run: |
+          chmod +x ./build.sh
+          sudo ./build.sh -u plasma_desktop -d pinetab2 -a aarch64
+      - name: Set environment variables
+        run: |
+          echo "DEVICE=${{ matrix.device }}" >> $GITHUB_ENV
+          echo "UI=${{ matrix.ui }}" >> $GITHUB_ENV
+
+      - name: Run build script
+        run: |
+          chmod +x ./build.sh
+          sudo ./build.sh -u $UI -d $DEVICE -a aarch64
+
+      - name: Move image file
+        run: |
+          mv build/*.img ./${DEVICE}-${UI}-archlinux.img
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.device }}-${{ matrix.ui }}-archlinux.img
+          path: ./${{ matrix.device }}-${{ matrix.ui }}-archlinux.img

@@ -8,8 +8,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - device: ['pinetab2', 'pinetab']
-          - ui: ['barebone', 'plasma_desktop']
+          - device: 'pinetab2'
+            ui: 'barebone'
     runs-on: ubuntu-latest #${{ matrix.platform }#}
     steps:
       - name: Checkout repository
@@ -30,7 +30,7 @@ jobs:
           sudo apt-get install -y lsof wget util-linux libarchive-tools e2fsprogs dosfstools arch-install-scripts fdisk qemu-user-static
       - name: Run build script
         run: |
-          chmod +x ./build.sh
+          sudo chmod u+x ./build.sh
           sudo ./build.sh -u barebone -d pinetab2 -a aarch64
       - name: Compress Image
         run: |

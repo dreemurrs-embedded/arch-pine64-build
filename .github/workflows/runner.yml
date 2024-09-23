@@ -37,7 +37,7 @@ jobs:
           mv build/*.img ./archlinux-${{ matrix.device }}-${{ matrix.ui }}.img
           xz z -9 ./archlinux-${{ matrix.device }}-${{ matrix.ui }}.img
       - name: Upload Image
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Compressed Image
           path: archlinux-${{ matrix.device }}-${{ matrix.ui }}.img.xz

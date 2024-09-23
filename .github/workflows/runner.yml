@@ -9,9 +9,7 @@ jobs:
       matrix:
         include:
           - device: 'pinetab2'
-            ui: 'barebone'
-          - device: 'pinetab2'
-            ui: 'plasma_desktop'
+            ui: ['barebone', 'plasma_desktop']
     runs-on: ubuntu-latest #${{ matrix.platform }#}
     steps:
       - name: Checkout repository
@@ -33,4 +31,4 @@ jobs:
       - name: Run build script
         run: |
           chmod +x ./build.sh
-          sudo ./build.sh -u ${{ matrix.ui }} -d ${{ matrix.device }} -a aarch64 -n alarm -p 123456
+          sudo ./build.sh -u barebone -d pinetab2 -a aarch64

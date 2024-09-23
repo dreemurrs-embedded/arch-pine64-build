@@ -8,8 +8,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - device: 'pinetab2'
-            ui: ['barebone', 'plasma_desktop']
+          - device: ['pinetab2', 'pinetab']
+          - ui: ['barebone', 'plasma_desktop']
     runs-on: ubuntu-latest #${{ matrix.platform }#}
     steps:
       - name: Checkout repository
@@ -32,3 +32,12 @@ jobs:
         run: |
           chmod +x ./build.sh
           sudo ./build.sh -u barebone -d pinetab2 -a aarch64
+      - name: Compress Image
+        run: |
+          mv build/*.img ./archlinux-${{ matrix.device }}-${{ matrix.ui }}.img
+          xz z -9 ./archlinux-${{ matrix.device }}-${{ matrix.ui }}.img
+      - name: Upload Image
+        uses: actions/upload-artifact@v2
+        with:
+          name: Compressed Image
+          path: archlinux-${{ matrix.device }}-${{ matrix.ui }}.img.xz

@@ -9,7 +9,9 @@ jobs:
       matrix:
         include:
           - device: 'pinetab2'
-            ui: ['barebone', 'plasma_desktop']
+            ui: 'barebone'
+          - device: 'pinetab2'
+            ui: 'plasma_desktop'
     runs-on: ubuntu-latest #${{ matrix.platform }#}
     steps:
       - name: Checkout repository

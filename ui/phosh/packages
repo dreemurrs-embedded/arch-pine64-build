@@ -18,12 +18,11 @@ gnome-contacts-mobile
 gnome-maps
 gnome-sound-recorder
 gnome-text-editor
-gnome-usage-mobile
+gnome-usage
 gnome-weather
 gsfonts
 gst-plugins-bad
 gst-plugins-good
-gtherm
 gtk3-mobile
 lollypop
 megapixels
@@ -34,5 +33,6 @@ networkmanager-openvpn
 noto-fonts-emoji
 portfolio-file-manager
 postprocessd
+power-profiles-daemon
 purism-chatty
 xdg-user-dirs

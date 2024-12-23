@@ -46,6 +46,7 @@ packagekit-qt6
 pim-data-exporter
 pim-sieve-editor
 plasma
+power-profiles-daemon
 qt6-virtualkeyboard
 sddm
 signon-kwallet-extension

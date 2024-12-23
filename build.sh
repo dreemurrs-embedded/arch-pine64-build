@@ -228,6 +228,7 @@ FOE
 
 locale-gen
 echo "LANG=en_US.UTF-8" > /etc/locale.conf
+ln -s ../usr/share/zoneinfo/Europe/London /etc/localtime
 
 # remove pacman gnupg keys post generation
 rm -rf /etc/pacman.d/gnupg

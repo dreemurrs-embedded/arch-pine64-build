@@ -18,7 +18,7 @@ date=$(date +%Y%m%d)
 
 error() { echo -e "\e[41m\e[5mERROR:\e[49m\e[25m $1" && exit 1; }
 check_dependency() { [ $(which $1) ] || error "$1 not found. Please make sure it is installed and on your PATH."; }
-usage() { error "$0 [-a ARCHITECTURE] [-d device] [-u ui] [-h hostname] [--osk-sdl] [--noconfirm] [--cachedir directory] [--no-cachedir]"; }
+usage() { error "$0 [-a ARCHITECTURE] [-d device] [-u ui] [-h hostname] [-n username] [-p password] [--osk-sdl] [--noconfirm] [--cachedir directory] [--no-cachedir]"; }
 cleanup() {
     trap '' EXIT
     trap '' INT
@@ -51,6 +51,8 @@ parse_args() {
             -d|--device) device=$2; shift ;;
             -u|--ui) ui=$2; shift ;;
             -h|--hostname) hostname=$2; shift ;;
+            -n| --username) username=$2; shift ;;
+            -p| --password) password=$2; shift ;;
             --noconfirm) NOCONFIRM=1;;
             --osk-sdl) OSK_SDL=1;;
             --cachedir) cachedir=$2; shift ;;
@@ -209,20 +211,20 @@ systemctl disable systemd-resolved
 systemctl enable zramswap
 systemctl enable NetworkManager
 
-usermod -a -G network,video,audio,rfkill,wheel alarm
+usermod -a -G network,video,audio,rfkill,wheel $username
 
 $(echo -e "${postinstall[@]}")
 
-cp -rv /etc/skel/. /home/alarm
-chown -R alarm:alarm /home/alarm
+cp -rv /etc/skel/. /home/$username
+chown -R $username:$username /home/$username
 
 if [ -e /etc/sudoers ]; then
     sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 fi
 
-cat << FOE | passwd alarm
-123456
-123456
+cat << FOE | passwd $username
+$password
+$password
 
 FOE
 

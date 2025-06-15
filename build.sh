@@ -187,9 +187,9 @@ init_rootfs() {
     echo "${hostname:-danctnix}" > "$temp/etc/hostname"
 
     # Download our gpg key and install it first, this however will be overwritten with our package later.
-    wget https://raw.githubusercontent.com/dreemurrs-embedded/Pine64-Arch/master/PKGBUILDS/danctnix/danctnix-keyring/danctnix.gpg \
+    wget https://raw.githubusercontent.com/dreemurrs-embedded/danctnix-packages/master/danctnix/danctnix-keyring/danctnix.gpg \
         -O "$temp/usr/share/pacman/keyrings/danctnix.gpg"
-    wget https://raw.githubusercontent.com/dreemurrs-embedded/Pine64-Arch/master/PKGBUILDS/danctnix/danctnix-keyring/danctnix-trusted \
+    wget https://raw.githubusercontent.com/dreemurrs-embedded/danctnix-packages/master/danctnix/danctnix-keyring/danctnix-trusted \
         -O "$temp/usr/share/pacman/keyrings/danctnix-trusted"
 
     cat > "$temp/second-phase" <<EOF

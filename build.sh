@@ -41,6 +41,7 @@ pre_check() {
     check_dependency mkfs.ext4
     check_dependency genfstab
     check_dependency lsof
+    check_dependency parted
     chmod 755 "$temp"
 }
 

@@ -32,7 +32,7 @@ trap cleanup EXIT
 trap cleanup INT
 
 pre_check() {
-    check_dependency wget
+    check_dependency curl
     check_dependency bsdtar
     check_dependency fallocate
     check_dependency fdisk
@@ -106,7 +106,7 @@ download_rootfs() {
             *) echo "Aborting." && exit 1 ;;
         esac; }
 
-    wget -O "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" http://os.archlinuxarm.org/os/ArchLinuxARM-$arch-latest.tar.gz
+    curl -L http://os.archlinuxarm.org/os/ArchLinuxARM-$arch-latest.tar.gz -o "$output_folder/ArchLinuxARM-$arch-latest.tar.gz"
 
     pushd .
     cd $output_folder && { curl -s -L http://os.archlinuxarm.org/os/ArchLinuxARM-$arch-latest.tar.gz.md5 | md5sum -c \
@@ -188,10 +188,10 @@ init_rootfs() {
     echo "${hostname:-danctnix}" > "$temp/etc/hostname"
 
     # Download our gpg key and install it first, this however will be overwritten with our package later.
-    wget https://raw.githubusercontent.com/dreemurrs-embedded/danctnix-packages/master/danctnix/danctnix-keyring/danctnix.gpg \
-        -O "$temp/usr/share/pacman/keyrings/danctnix.gpg"
-    wget https://raw.githubusercontent.com/dreemurrs-embedded/danctnix-packages/master/danctnix/danctnix-keyring/danctnix-trusted \
-        -O "$temp/usr/share/pacman/keyrings/danctnix-trusted"
+    curl https://raw.githubusercontent.com/dreemurrs-embedded/danctnix-packages/master/danctnix/danctnix-keyring/danctnix.gpg \
+        -o "$temp/usr/share/pacman/keyrings/danctnix.gpg"
+    curl https://raw.githubusercontent.com/dreemurrs-embedded/danctnix-packages/master/danctnix/danctnix-keyring/danctnix-trusted \
+        -o "$temp/usr/share/pacman/keyrings/danctnix-trusted"
 
     cat > "$temp/second-phase" <<EOF
 #!/bin/bash

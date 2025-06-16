@@ -2,12 +2,12 @@
 
 # SPDX-License-Identifier: GPL-3.0-only
 # Copyright 2023 Dang Huynh <danct12@disroot.org>
+# Ruined 2025 by Christian Duerr <alarm@christianduerr.com>
 
 set -e
 
 SUPPORTED_ARCHES=(aarch64 armv7)
 NOCONFIRM=0
-OSK_SDL=0
 NO_BOOTLOADER=0
 use_pipewire=0
 output_folder="build"
@@ -18,7 +18,7 @@ date=$(date +%Y%m%d)
 
 error() { echo -e "\e[41m\e[5mERROR:\e[49m\e[25m $1" && exit 1; }
 check_dependency() { [ $(which $1) ] || error "$1 not found. Please make sure it is installed and on your PATH."; }
-usage() { error "$0 <-a ARCHITECTURE> <-d DEVICE> <-u UI> [-h HOSTNAME] [--osk-sdl] [--noconfirm] [--cachedir directory] [--no-cachedir]"; }
+usage() { error "$0 <-a ARCHITECTURE> <-d DEVICE> <-p PACKAGES> [--postinstall POSTINSTALL] [-h HOSTNAME] [--noconfirm] [--cachedir directory] [--no-cachedir]"; }
 cleanup() {
     trap '' EXIT
     trap '' INT
@@ -50,10 +50,10 @@ parse_args() {
         case $1 in
             -a|--arch) arch=$2; shift ;;
             -d|--device) device=$2; shift ;;
-            -u|--ui) ui=$2; shift ;;
+            -p|--packages) packages=$2; shift ;;
+            --postinstall) postinstall=$2; shift ;;
             -h|--hostname) hostname=$2; shift ;;
             --noconfirm) NOCONFIRM=1;;
-            --osk-sdl) OSK_SDL=1;;
             --cachedir) cachedir=$2; shift ;;
             --no-cachedir) cachedir= ;;
             *) usage ;;
@@ -64,7 +64,6 @@ parse_args() {
 
 parse_presets() {
     [ ! -e "devices/$device" ] && error "Device \"$device\" is unknown!"
-    [ ! -e "ui/$ui" ] && error "User Interface \"$ui\" is unknown!"
 
     [ ! -e "devices/$device/config" ] && error "\"$device\" doesn't have a config file!" \
         || source "devices/$device/config"
@@ -72,23 +71,6 @@ parse_presets() {
     for i in $(cat "devices/$device/packages"); do
         packages_device+=( $i )
     done
-
-    for i in $(cat "ui/$ui/packages"); do
-        [ $use_pipewire -gt 0 ] && packages_ui+=( pipewire-audio pipewire-alsa pipewire-jack pipewire-pulse )
-        packages_ui+=( $i )
-    done
-
-    if [ -e "devices/$device/packages-$ui-extra" ]; then
-        for i in $(cat "devices/$device/packages-$ui-extra"); do
-            packages_ui+=( $i )
-        done
-    fi
-
-    if [ -e "ui/$ui/postinstall" ]; then
-        while IFS= read -r postinstall_line; do
-            postinstall+=("$postinstall_line\n")
-        done < ui/$ui/postinstall
-    fi
 }
 
 check_arch() {
@@ -96,27 +78,32 @@ check_arch() {
 }
 
 download_rootfs() {
-    [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" ] && return
+    alarm_filename="ArchLinuxARM-$arch-latest.tar.gz"
+    alarm_url="http://os.archlinuxarm.org/os/$alarm_filename"
+    alarm_rootfs="ArchLinuxARM-$arch-$date.tar.gz"
 
-    [ -f "$output_folder/ArchLinuxARM-$arch-latest.tar.gz"  ] && {
-        read -rp "Stock rootfs already exist, delete it? (y/n) " yn
-        case $yn in
-            [Yy]*) rm "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" ;;
-            [Nn]*) return ;;
-            *) echo "Aborting." && exit 1 ;;
-        esac; }
+    # Short-circuit if rootfs already exists.
+    if [ -f "$output_folder/$alarm_rootfs" ]; then
+        echo "Using cached ALARM rootfs."
+        return
+    fi
 
-    curl -L http://os.archlinuxarm.org/os/ArchLinuxARM-$arch-latest.tar.gz -o "$output_folder/ArchLinuxARM-$arch-latest.tar.gz"
+    # Download ALARM rootfs.
+    curl -L "$alarm_url" -o "$output_folder/$alarm_filename"
 
+    # Verify rootfs checksum.
     pushd .
-    cd $output_folder && { curl -s -L http://os.archlinuxarm.org/os/ArchLinuxARM-$arch-latest.tar.gz.md5 | md5sum -c \
-        || { rm ArchLinuxARM-$arch-latest.tar.gz && error "Rootfs checksum failed!"; } }
+    cd $output_folder && { curl -sL "$alarm_url.md5" | md5sum -c \
+        || { rm "$alarm_rootfs" && error "ALARM rootfs checksum failed!"; } }
     popd
+
+    # Move to dated filename.
+    mv "$output_folder/$alarm_filename" "$output_folder/$alarm_rootfs"
 }
 
 extract_rootfs() {
-    [ -f "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" ] || error "Rootfs not found"
-    bsdtar -xpf "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" -C "$temp"
+    [ -f "$output_folder/$alarm_rootfs" ] || error "ALARM rootfs not found"
+    bsdtar -xpf "$output_folder/$alarm_rootfs" -C "$temp"
 }
 
 mount_chroot() {
@@ -154,24 +141,17 @@ do_chroot() {
 }
 
 init_rootfs() {
-    if [ $OSK_SDL -gt 0 ]; then
-        rootfs_tarball="rootfs-$device-$ui-$date-osksdl.tar.gz"
-        packages_ui+=( osk-sdl )
-    else
-        rootfs_tarball="rootfs-$device-$ui-$date.tar.gz"
+    download_rootfs
+
+    rootfs_md5=$(md5sum "$output_folder/$alarm_rootfs" | awk '{print $1}')
+    rootfs_tarball="rootfs-$device-$rootfs_md5.tar.gz"
+
+    # Short-circuit if danctnix rootfs already exists.
+    if [ -f "$output_folder/$rootfs_tarball" ]; then
+        echo "Using cached Danctnix rootfs."
+        return
     fi
 
-    [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/$rootfs_tarball" ] && rm "$output_folder/$rootfs_tarball"
-
-    [ -f "$output_folder/$rootfs_tarball"  ] && {
-        read -rp "Rootfs seems to have generated before, delete it? (y/n) " yn
-        case $yn in
-            [Yy]*) rm "$output_folder/$rootfs_tarball" ;;
-            [Nn]*) return ;;
-            *) echo "Aborting." && exit 1 ;;
-        esac; }
-
-    download_rootfs
     extract_rootfs
     mount_chroot
     mount_cache
@@ -181,9 +161,7 @@ init_rootfs() {
 
     cp "overlays/base/etc/pacman.conf" "$temp/etc/pacman.conf"
 
-    if [[ $ui = "barebone" ]]; then
-        sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' "$temp/etc/locale.gen"
-    fi
+    sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' "$temp/etc/locale.gen"
 
     echo "${hostname:-danctnix}" > "$temp/etc/hostname"
 
@@ -201,7 +179,7 @@ pacman-key --populate archlinuxarm danctnix
 pacman-key --lsign-key 68B3537F39A313B3E574D06777193F152BDBE6A6
 pacman -Rsn --noconfirm linux-$arch
 pacman -Syu --noconfirm --overwrite=*
-pacman -S --noconfirm --overwrite=* --needed ${packages_device[@]} ${packages_ui[@]}
+pacman -S --noconfirm --overwrite=* --needed ${packages_device[@]}
 
 
 systemctl disable sshd
@@ -211,8 +189,6 @@ systemctl enable zramswap
 systemctl enable NetworkManager
 
 usermod -a -G network,video,audio,rfkill,wheel alarm
-
-$(echo -e "${postinstall[@]}")
 
 cp -rv /etc/skel/. /home/alarm
 chown -R alarm:alarm /home/alarm
@@ -240,21 +216,13 @@ EOF
     do_chroot /second-phase || error "Failed to run the second phase rootfs build!"
 
     cp -r overlays/base/* "$temp/"
-    [ -d "overlays/$ui" ] && cp -r overlays/$ui/* "$temp/"
     [ -d "devices/$device/overlays/base" ] && cp -r devices/$device/overlays/base/* "$temp/"
-    [ -d "devices/$device/overlays/$ui" ] && cp -r devices/$device/overlays/$ui/* "$temp/"
-
-    if [ -e "$temp/usr/lib/initcpio/hooks/resizerootfs" ] && [ $OSK_SDL -gt 0 ]; then
-        rm -f $temp/usr/lib/initcpio/hooks/resizerootfs
-        rm -f $temp/usr/lib/initcpio/install/resizerootfs
-    fi
 
     [ -e "$temp/usr/lib/initcpio/hooks/resizerootfs" ] && sed -i '/^HOOKS=/s/fsck/resizerootfs fsck/g' "$temp/etc/mkinitcpio.conf"
-    [ -e "$temp/usr/lib/initcpio/hooks/osk-sdl" ] && sed -i '/^HOOKS=/s/fsck/osk-sdl fsck/g' "$temp/etc/mkinitcpio.conf"
 
     sed -i "s/REPLACEDATE/$date/g" "$temp/usr/local/sbin/first_time_setup.sh"
 
-    [[ "$ui" != "barebone" ]] && do_chroot passwd -dl root
+    do_chroot passwd -dl root
 
     [ -d "$temp/usr/share/glib-2.0/schemas" ] && do_chroot /usr/bin/glib-compile-schemas /usr/share/glib-2.0/schemas
     do_chroot mkinitcpio -P
@@ -264,34 +232,83 @@ EOF
 
     unmount_chroot
 
-    echo "Creating tarball: $rootfs_tarball ..."
+    echo "Creating base image tarball: $rootfs_tarball ..."
     pushd .
     cd $temp && bsdtar -czpf ../$rootfs_tarball .
     popd
+}
+
+add_packages() {
+    packages_md5=$(echo "$packages" | md5sum - | awk '{print $1}')
+    danctnix_tarball="danctnix-$device-$rootfs_md5-$packages_md5.tar.gz"
+
+    # Short-circuit if image tarball is up to date.
+    if [ -f "$output_folder/$danctnix_tarball" ]; then
+        echo "Using cached packages rootfs."
+        return;
+    fi
+
+    # Ensure tempdir is clean.
     rm -rf $temp
+    mkdir -p $temp
+
+    # Recover existing rootfs.
+    echo "Extracting base image tarball…"
+    bsdtar -xpf "$output_folder/$rootfs_tarball" -C "$temp"
+
+    echo "Installing additional packages…"
+
+    mount_chroot
+    mount_cache
+
+    cat > "$temp/add_packages" <<EOF
+#!/bin/bash
+set -e
+pacman-key --init
+pacman-key --populate archlinuxarm danctnix
+pacman-key --lsign-key 68B3537F39A313B3E574D06777193F152BDBE6A6
+pacman -S --noconfirm --overwrite=* --needed ${packages[@]}
+
+$(echo -e "${postinstall[@]}")
+
+rm /add_packages
+EOF
+
+    chmod +x "$temp/add_packages"
+    do_chroot /add_packages || error "Failed to add packages to rootfs!"
+
+    unmount_cache
+    yes | do_chroot pacman -Scc
+
+    unmount_chroot
+
+    echo "Creating image tarball: $danctnix_tarball ..."
+    pushd .
+    cd $temp && bsdtar -czpf ../$danctnix_tarball .
+    popd
 }
 
 make_image() {
-    [ ! -e "$output_folder/$rootfs_tarball" ] && \
-        error "Rootfs not found! (how did you get here?)"
+    [ ! -e "$output_folder/$danctnix_tarball" ] && \
+        error "Image tarball not found! (how did you get here?)"
 
-    [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/archlinux-$device-$ui-$date.img" ] && \
-        rm "$output_folder/archlinux-$device-$ui-$date.img"
+    image="archlinux-$device-$rootfs_md5-$packages_md5.img"
 
-    [ -f "$output_folder/archlinux-$device-$ui-$date.img"  ] && {
-        read -rp "Disk image already exist, delete it? (y/n) " yn
-        case $yn in
-            [Yy]*) rm "$output_folder/archlinux-$device-$ui-$date.img" ;;
-            [Nn]*) return ;;
-            *) echo "Aborting." && exit 1 ;;
-        esac; }
+    # Short-circuit if image is up to date.
+    if [ -f "$output_folder/$image" ]; then
+        echo "Using cached image."
+        return;
+    fi
 
-    disk_size="$(eval "echo \${size_ui_$ui}")"
+    # Ensure tempdir is clean.
+    rm -rf $temp
+    mkdir -p $temp
 
-    disk_output="$output_folder/archlinux-$device-$ui-$date.img"
+    image_path="$output_folder/$image"
 
+    disk_size="8G"
     echo "Generating a blank disk image ($disk_size)"
-    fallocate -l $disk_size $disk_output
+    fallocate -l $disk_size $image_path
 
     boot_part_start=${boot_part_start:-1}
     boot_part_size=${boot_part_size:-128}
@@ -299,20 +316,19 @@ make_image() {
     echo "Boot partition start: ${boot_part_start}MB"
     echo "Boot partition size: ${boot_part_size}MB"
 
-    parted -s $disk_output mktable gpt
-    parted -s $disk_output mkpart boot fat32 ${boot_part_start}MB $[boot_part_start+boot_part_size]MB
-    parted -s $disk_output set 1 esp on
-    parted -s $disk_output mkpart rootfs ext4 $[boot_part_start+boot_part_size]MB '100%'
+    parted -s $image_path mktable gpt
+    parted -s $image_path mkpart boot fat32 ${boot_part_start}MB $[boot_part_start+boot_part_size]MB
+    parted -s $image_path set 1 esp on
+    parted -s $image_path mkpart rootfs ext4 $[boot_part_start+boot_part_size]MB '100%'
 
     echo "Attaching loop device"
     loop_device=$(losetup -f)
-    losetup -P $loop_device "$output_folder/archlinux-$device-$ui-$date.img"
+    losetup -P $loop_device "$image_path"
 
     echo "Creating filesystems"
     mkfs.vfat ${loop_device}p1
     mkfs.ext4 ${loop_device}p2
 
-    mkdir -p $temp
     echo "Mounting disk image"
     mount ${loop_device}p2 $temp
     mkdir -p $temp/boot
@@ -342,30 +358,11 @@ make_image() {
     losetup -d $loop_device
 }
 
-make_squashfs() {
-    check_dependency mksquashfs
-
-    [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/archlinux-$device-$ui-$date.sqfs" ] && \
-        rm "$output_folder/archlinux-$device-$ui-$date.sqfs"
-
-    [ -f "$output_folder/archlinux-$device-$ui-$date.sqfs"  ] && {
-        read -rp "Squashfs image already exist, delete it? (y/n) " yn
-        case $yn in
-            [Yy]*) rm "$output_folder/archlinux-$device-$ui-$date.sqfs" ;;
-            [Nn]*) return ;;
-            *) echo "Aborting." && exit 1 ;;
-        esac; }
-
-    mkdir -p "$temp"
-    bsdtar -xpf "$output_folder/$rootfs_tarball" -C "$temp"
-    mksquashfs "$temp" "$output_folder/archlinux-$device-$ui-$date.sqfs"
-    rm -rf "$temp"
-}
-
 pre_check
-parse_args $@
-[[ "$arch" && "$device" && "$ui" ]] || usage
+parse_args "$@"
+[[ "$arch" && "$device" && "$packages" ]] || usage
 check_arch
 parse_presets
 init_rootfs
-[ $OSK_SDL -gt 0 ] && make_squashfs || make_image
+add_packages
+make_image

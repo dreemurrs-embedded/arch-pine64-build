@@ -80,7 +80,12 @@ check_arch() {
 download_rootfs() {
     alarm_filename="ArchLinuxARM-$arch-latest.tar.gz"
     alarm_url="http://os.archlinuxarm.org/os/$alarm_filename"
-    alarm_rootfs="ArchLinuxARM-$arch-$date.tar.gz"
+
+    # Get latest ALARM checksum.
+    alarm_md5sum_file=$(curl -L "$alarm_url.md5")
+    rootfs_md5=$(printf "$alarm_md5sum_file" | awk '{print $1}')
+
+    alarm_rootfs="ArchLinuxARM-$arch-$rootfs_md5.tar.gz"
 
     # Short-circuit if rootfs already exists.
     if [ -f "$output_folder/$alarm_rootfs" ]; then
@@ -93,11 +98,11 @@ download_rootfs() {
 
     # Verify rootfs checksum.
     pushd .
-    cd $output_folder && { curl -sL "$alarm_url.md5" | md5sum -c \
+    cd $output_folder && { printf "$alarm_md5sum_file" | md5sum -c \
         || { rm "$alarm_rootfs" && error "ALARM rootfs checksum failed!"; } }
     popd
 
-    # Move to dated filename.
+    # Move to filename with md5sum.
     mv "$output_folder/$alarm_filename" "$output_folder/$alarm_rootfs"
 }
 
@@ -143,7 +148,6 @@ do_chroot() {
 init_rootfs() {
     download_rootfs
 
-    rootfs_md5=$(md5sum "$output_folder/$alarm_rootfs" | awk '{print $1}')
     rootfs_tarball="base-$device-$rootfs_md5.tar.gz"
 
     # Short-circuit if danctnix rootfs already exists.

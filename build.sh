@@ -144,7 +144,7 @@ init_rootfs() {
     download_rootfs
 
     rootfs_md5=$(md5sum "$output_folder/$alarm_rootfs" | awk '{print $1}')
-    rootfs_tarball="rootfs-$device-$rootfs_md5.tar.gz"
+    rootfs_tarball="base-$device-$rootfs_md5.tar.gz"
 
     # Short-circuit if danctnix rootfs already exists.
     if [ -f "$output_folder/$rootfs_tarball" ]; then
@@ -240,7 +240,7 @@ EOF
 
 add_packages() {
     packages_md5=$(echo "$packages" | md5sum - | awk '{print $1}')
-    danctnix_tarball="danctnix-$device-$rootfs_md5-$packages_md5.tar.gz"
+    danctnix_tarball="packaged-$device-$rootfs_md5-$packages_md5.tar.gz"
 
     # Short-circuit if image tarball is up to date.
     if [ -f "$output_folder/$danctnix_tarball" ]; then

@@ -295,7 +295,7 @@ make_image() {
     image="archlinux-$device-$rootfs_md5-$packages_md5.img"
 
     # Short-circuit if image is up to date.
-    if [ -f "$output_folder/$image" ]; then
+    if [ -f "$output_folder/$image.xz" ]; then
         echo "Using cached image."
         return;
     fi
@@ -356,6 +356,9 @@ make_image() {
     umount -R $temp
     rm -rf $temp
     losetup -d $loop_device
+
+    echo "Compressing image"
+    xz -z "$output_folder/$image"
 }
 
 pre_check

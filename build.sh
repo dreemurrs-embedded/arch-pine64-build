@@ -292,7 +292,7 @@ make_image() {
     [ ! -e "$output_folder/$danctnix_tarball" ] && \
         error "Image tarball not found! (how did you get here?)"
 
-    image="archlinux-$device-$rootfs_md5-$packages_md5.img"
+    image="alarm-$device-$rootfs_md5-$packages_md5.img"
 
     # Short-circuit if image is up to date.
     if [ -f "$output_folder/$image.xz" ]; then

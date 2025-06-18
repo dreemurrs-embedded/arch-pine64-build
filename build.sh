@@ -239,7 +239,7 @@ EOF
 }
 
 add_packages() {
-    packages_md5=$(echo "$packages" | md5sum - | awk '{print $1}')
+    packages_md5=$(printf "$packages" | md5sum | awk '{print $1}')
     danctnix_tarball="packaged-$device-$rootfs_md5-$packages_md5.tar.gz"
 
     # Short-circuit if image tarball is up to date.

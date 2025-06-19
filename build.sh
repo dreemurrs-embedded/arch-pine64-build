@@ -18,7 +18,7 @@ date=$(date +%Y%m%d)
 
 error() { echo -e "\e[41m\e[5mERROR:\e[49m\e[25m $1" && exit 1; }
 check_dependency() { [ $(which $1) ] || error "$1 not found. Please make sure it is installed and on your PATH."; }
-usage() { error "$0 <-a ARCHITECTURE> <-d DEVICE> <-p PACKAGES> [--postinstall POSTINSTALL] [-h HOSTNAME] [--noconfirm] [--cachedir directory] [--no-cachedir]"; }
+usage() { error "$0 <-a ARCHITECTURE> <-d DEVICE> <-p PACKAGES> [-h HOSTNAME] [--noconfirm] [--cachedir directory] [--no-cachedir]"; }
 cleanup() {
     trap '' EXIT
     trap '' INT
@@ -51,7 +51,6 @@ parse_args() {
             -a|--arch) arch=$2; shift ;;
             -d|--device) device=$2; shift ;;
             -p|--packages) packages=$2; shift ;;
-            --postinstall) postinstall=$2; shift ;;
             -h|--hostname) hostname=$2; shift ;;
             --noconfirm) NOCONFIRM=1;;
             --cachedir) cachedir=$2; shift ;;
@@ -68,9 +67,26 @@ parse_presets() {
     [ ! -e "devices/$device/config" ] && error "\"$device\" doesn't have a config file!" \
         || source "devices/$device/config"
 
+    # Add device-specific packages.
     for i in $(cat "devices/$device/packages"); do
         packages_device+=( $i )
     done
+
+    # Add postinstall steps for DE package groups.
+    if [[ "$packages" =~ " danctnix-phosh-ui-meta " ]]; then
+        postinstall+=("systemctl enable bluetooth\n")
+        postinstall+=("systemctl enable cups\n")
+        postinstall+=("systemctl enable ModemManager\n")
+        postinstall+=("systemctl enable phosh\n")
+    fi
+    if [[ "$packages" =~ " danctnix-pm-ui-meta " ]]; then
+        postinstall+=("groupadd -r autologin\n")
+        postinstall+=("gpasswd -a alarm autologin\n")
+        postinstall+=("systemctl enable bluetooth\n")
+        postinstall+=("systemctl enable cups\n")
+        postinstall+=("systemctl enable ModemManager\n")
+        postinstall+=("systemctl enable lightdm\n")
+    fi
 }
 
 check_arch() {

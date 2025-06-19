@@ -291,6 +291,8 @@ pacman -S --noconfirm --overwrite=* --needed ${packages[@]}
 
 $(echo -e "${postinstall[@]}")
 
+# remove pacman gnupg keys post generation
+rm -rf /etc/pacman.d/gnupg
 rm /add_packages
 EOF
 

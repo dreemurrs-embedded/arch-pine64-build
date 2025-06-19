@@ -261,6 +261,7 @@ EOF
 add_packages() {
     packages_md5=$(printf "$packages" | md5sum | awk '{print $1}')
     danctnix_tarball="packaged-$device-$rootfs_md5-$packages_md5.tar.gz"
+    sizefile="$danctnix_tarball.size"
 
     # Short-circuit if image tarball is up to date.
     if [ -f "$output_folder/$danctnix_tarball" ]; then
@@ -304,6 +305,11 @@ EOF
 
     unmount_chroot
 
+    # Cache rootfs size with 10% margin for future image creation.
+    imgsize=$(( $(du -bs $temp | awk '{print $1}') * 100 / 90 ))
+    printf "$imgsize" > "$output_folder/$sizefile"
+    echo "Cached uncompressed image size: $imgsize"
+
     echo "Creating image tarball: $danctnix_tarball ..."
     pushd .
     cd $temp && bsdtar -czpf ../$danctnix_tarball .
@@ -328,12 +334,14 @@ make_image() {
 
     image_path="$output_folder/$image"
 
-    disk_size="8G"
-    echo "Generating a blank disk image ($disk_size)"
-    fallocate -l $disk_size $image_path
-
     boot_part_start=${boot_part_start:-1}
     boot_part_size=${boot_part_size:-128}
+    imgsize=$(cat "$output_folder/$sizefile")
+    imgsize=$(( (boot_part_start + boot_part_size) * 1048576 + imgsize ))
+    disk_size="${imgsize:-8G}"
+
+    echo "Generating a blank disk image ($disk_size)"
+    fallocate -l $disk_size $image_path
 
     echo "Boot partition start: ${boot_part_start}MB"
     echo "Boot partition size: ${boot_part_size}MB"

@@ -11,8 +11,9 @@ fi
 upload_secret="$1"
 
 while true; do
-    # Wait before checking for new jobs.
-    sleep 60
+    # Wait after each attempt.
+    sleep ${interval:-0}
+    interval=60
 
     # Get the next pending job.
     echo "Checking for pending jobs…"

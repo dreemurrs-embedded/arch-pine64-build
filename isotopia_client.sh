@@ -4,6 +4,12 @@
 
 api="https://catacombing.org/isotopia"
 
+if [[ $# -lt 1 ]]; then
+    echo "Usage: bench.sh <UPLOAD_SECRET>"
+    exit 1
+fi
+upload_secret="$1"
+
 while true; do
     # Wait before checking for new jobs.
     sleep 60
@@ -36,7 +42,11 @@ while true; do
     alarm_md5sum=$(md5sum ./build/ArchLinuxARM* | awk '{print $1}')
     filename="alarm-$device-$alarm_md5sum-$md5sum.img.xz"
     if [ -f "./build/$filename" ]; then
-        curl -fX POST -F filename=@"./build/$filename" "$api/requests/$device/$md5sum/$alarm_md5sum/image" || continue
+        curl -fX POST \
+            -H "Authorization: Bearer $1" \
+            -F filename=@"./build/$filename" \
+            "$api/requests/$device/$md5sum/$alarm_md5sum/image" \
+            || continue
         echo "Finished upload of $md5sum"
     else
         echo "Built image $filename does not exist"

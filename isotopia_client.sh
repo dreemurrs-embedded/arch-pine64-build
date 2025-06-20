@@ -17,7 +17,7 @@ while true; do
 
     # Get the next pending job.
     echo "[$(date +%H:%M:%S)] Checking for pending jobs…"
-    job=$(curl -sf "$api/pending" | jq -c '.[0]') || exit
+    job=$(curl -sf "$api/requests/pending" | jq -c '.[0]') || exit
     if [[ "$job" == "null" ]]; then
         continue;
     fi

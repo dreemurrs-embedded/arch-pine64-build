@@ -13,7 +13,7 @@ upload_secret="$1"
 while true; do
     # Wait after each attempt.
     sleep ${interval:-0}
-    interval=60
+    interval=10
 
     # Get the next pending job.
     echo "[$(date +%H:%M:%S)] Checking for pending jobs…"

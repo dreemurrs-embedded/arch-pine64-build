@@ -1,5 +1,6 @@
 curl
 danctnix-keyring
+catacomb-keyring
 device-pine64-pinephonepro
 dialog
 dosfstools

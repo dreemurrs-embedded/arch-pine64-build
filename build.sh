@@ -190,14 +190,17 @@ init_rootfs() {
         -o "$temp/usr/share/pacman/keyrings/danctnix.gpg"
     curl https://raw.githubusercontent.com/dreemurrs-embedded/danctnix-packages/master/danctnix/danctnix-keyring/danctnix-trusted \
         -o "$temp/usr/share/pacman/keyrings/danctnix-trusted"
+    curl https://raw.githubusercontent.com/catacombing/packaging/master/arch/catacomb-keyring/catacomb.gpg \
+        -o "$temp/usr/share/pacman/keyrings/catacomb.gpg"
+    curl https://raw.githubusercontent.com/catacombing/packaging/master/arch/catacomb-keyring/catacomb-trusted \
+        -o "$temp/usr/share/pacman/keyrings/catacomb-trusted"
 
     cat > "$temp/second-phase" <<EOF
 #!/bin/bash
 set -e
 pacman-key --init
-pacman-key --populate archlinuxarm danctnix
+pacman-key --populate archlinuxarm danctnix catacomb
 pacman-key --lsign-key 68B3537F39A313B3E574D06777193F152BDBE6A6
-pacman-key --recv-keys 733163AA31950B7F4BE7EC4082CE6C29C7797E04
 pacman-key --lsign-key 733163AA31950B7F4BE7EC4082CE6C29C7797E04
 pacman -Rsn --noconfirm linux-$arch
 pacman -Syu --noconfirm --overwrite=*
@@ -288,9 +291,8 @@ add_packages() {
 #!/bin/bash
 set -e
 pacman-key --init
-pacman-key --populate archlinuxarm danctnix
+pacman-key --populate archlinuxarm danctnix catacomb
 pacman-key --lsign-key 68B3537F39A313B3E574D06777193F152BDBE6A6
-pacman-key --recv-keys 733163AA31950B7F4BE7EC4082CE6C29C7797E04
 pacman-key --lsign-key 733163AA31950B7F4BE7EC4082CE6C29C7797E04
 pacman -Syu --noconfirm --overwrite=*
 pacman -S --noconfirm --overwrite=* --needed ${packages[@]}

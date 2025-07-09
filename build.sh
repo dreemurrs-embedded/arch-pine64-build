@@ -161,6 +161,26 @@ do_chroot() {
     chroot "$temp" "$@"
 }
 
+cleanup_cache() {
+    # Expire cached images after 13 days.
+    #
+    # We use just under 2 weeks to ensure when Isotopia prompts a rebuild clock
+    # differences aren't going to cause any issues.
+    max_age=$((60 * 60 * 24 * 13))
+
+    now=$(date +%s)
+
+    for file in $output_folder/{alarm-,base-,packaged-}*; do
+        creation_time=$(stat -c %W "$file")
+        delta=$((now - creation_time))
+
+        if [ $delta -ge $max_age ]; then
+            echo "Removing $file from cache"
+            rm "$file"
+        fi
+    done
+}
+
 init_rootfs() {
     download_rootfs
 
@@ -403,6 +423,7 @@ parse_args "$@"
 [[ "$arch" && "$device" && "$packages" ]] || usage
 check_arch
 parse_presets
+cleanup_cache
 init_rootfs
 add_packages
 make_image

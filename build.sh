@@ -105,7 +105,7 @@ download_rootfs() {
 
     # Short-circuit if rootfs already exists.
     if [ -f "$output_folder/$alarm_rootfs" ]; then
-        echo "Using cached ALARM rootfs."
+        echo "Using cached ALARM rootfs $output_folder/$alarm_rootfs"
         return
     fi
 
@@ -168,7 +168,7 @@ init_rootfs() {
 
     # Short-circuit if danctnix rootfs already exists.
     if [ -f "$output_folder/$rootfs_tarball" ]; then
-        echo "Using cached Danctnix rootfs."
+        echo "Using cached Danctnix rootfs $output_folder/$rootfs_tarball"
         return
     fi
 
@@ -270,7 +270,7 @@ add_packages() {
 
     # Short-circuit if image tarball is up to date.
     if [ -f "$output_folder/$danctnix_tarball" ]; then
-        echo "Using cached packages rootfs."
+        echo "Using cached packages rootfs $output_folder/$danctnix_tarball"
         return;
     fi
 
@@ -331,7 +331,7 @@ make_image() {
 
     # Short-circuit if image is up to date.
     if [ -f "$output_folder/$image.xz" ]; then
-        echo "Using cached image."
+        echo "Using cached image $output_folder/$image.xz"
         return;
     fi
 

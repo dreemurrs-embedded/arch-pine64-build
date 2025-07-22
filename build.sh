@@ -41,6 +41,7 @@ pre_check() {
     check_dependency mkfs.ext4
     check_dependency genfstab
     check_dependency lsof
+    check_dependency parted
     chmod 755 "$temp"
 }
 
@@ -94,6 +95,15 @@ check_arch() {
     echo ${SUPPORTED_ARCHES[@]} | grep -q $arch || { echo "$arch is not supported. Supported architecture are: ${SUPPORTED_ARCHES[@]}" && exit 1; }
 }
 
+download_keyring() {
+    [ -f "$output_folder/danctnix.gpg" ] && [ -f "$output_folder/danctnix-trusted" ] && return
+
+    wget https://raw.githubusercontent.com/dreemurrs-embedded/danctnix-packages/master/danctnix/danctnix-keyring/danctnix.gpg \
+        -O "$output_folder/danctnix.gpg"
+    wget https://raw.githubusercontent.com/dreemurrs-embedded/danctnix-packages/master/danctnix/danctnix-keyring/danctnix-trusted \
+        -O "$output_folder/danctnix-trusted"
+}
+
 download_rootfs() {
     [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" ] && return
 
@@ -105,10 +115,11 @@ download_rootfs() {
             *) echo "Aborting." && exit 1 ;;
         esac; }
 
-    wget -O "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" http://os.archlinuxarm.org/os/ArchLinuxARM-$arch-latest.tar.gz
+    # Use the Californian mirror because it supports HTTPS
+    wget -O "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" https://ca.us.mirror.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz
 
     pushd .
-    cd $output_folder && { curl -s -L http://os.archlinuxarm.org/os/ArchLinuxARM-$arch-latest.tar.gz.md5 | md5sum -c \
+    cd $output_folder && { curl -s -L https://ca.us.mirror.archlinuxarm.org/os/ArchLinuxARM-$arch-latest.tar.gz.md5 | md5sum -c \
         || { rm ArchLinuxARM-$arch-latest.tar.gz && error "Rootfs checksum failed!"; } }
     popd
 }
@@ -170,6 +181,7 @@ init_rootfs() {
             *) echo "Aborting." && exit 1 ;;
         esac; }
 
+    download_keyring
     download_rootfs
     extract_rootfs
     mount_chroot
@@ -186,11 +198,9 @@ init_rootfs() {
 
     echo "${hostname:-danctnix}" > "$temp/etc/hostname"
 
-    # Download our gpg key and install it first, this however will be overwritten with our package later.
-    wget https://raw.githubusercontent.com/dreemurrs-embedded/danctnix-packages/master/danctnix/danctnix-keyring/danctnix.gpg \
-        -O "$temp/usr/share/pacman/keyrings/danctnix.gpg"
-    wget https://raw.githubusercontent.com/dreemurrs-embedded/danctnix-packages/master/danctnix/danctnix-keyring/danctnix-trusted \
-        -O "$temp/usr/share/pacman/keyrings/danctnix-trusted"
+    # Install our GPG key first, this will be overwritten with our package later.
+    cp $output_folder/danctnix.gpg "$temp/usr/share/pacman/keyrings/danctnix.gpg"
+    cp $output_folder/danctnix-trusted "$temp/usr/share/pacman/keyrings/danctnix-trusted"
 
     cat > "$temp/second-phase" <<EOF
 #!/bin/bash

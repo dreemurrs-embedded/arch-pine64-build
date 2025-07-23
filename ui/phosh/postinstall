@@ -2,3 +2,4 @@ systemctl enable bluetooth
 systemctl enable cups
 systemctl enable ModemManager
 systemctl enable phosh
+gpasswd -a alarm feedbackd

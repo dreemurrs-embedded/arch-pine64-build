@@ -1,4 +1,5 @@
 platform="rockchip"
+use_pipewire=1
 size_ui_barebone="2048M"
 size_ui_phosh="5120M"
 size_ui_plasma="7168M"

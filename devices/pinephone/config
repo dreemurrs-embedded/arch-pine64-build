@@ -1,5 +1,6 @@
 platform="allwinner"
 bootloader="u-boot-sunxi-with-spl-pinephone-528.bin"
+use_pipewire=1
 size_ui_barebone="2048M"
 size_ui_phosh="6144M"
 size_ui_plasma="7168M"

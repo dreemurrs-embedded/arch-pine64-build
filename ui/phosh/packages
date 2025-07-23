@@ -1,3 +1,4 @@
+chatty
 cups
 cups-filters
 danctnix-phosh-ui-meta
@@ -10,11 +11,11 @@ geary
 ghostscript
 glibc-locales
 gnome-calculator
-gnome-calendar-mobile
+gnome-calendar
 gnome-calls
-gnome-clocks-mobile
+gnome-clocks
 gnome-console
-gnome-contacts-mobile
+gnome-contacts
 gnome-maps
 gnome-sound-recorder
 gnome-text-editor
@@ -31,8 +32,10 @@ mmsd-tng
 mobile-config-firefox
 networkmanager-openvpn
 noto-fonts-emoji
+phosh-mobile-settings
+phosh-wallpapers
 portfolio-file-manager
 postprocessd
 power-profiles-daemon
-purism-chatty
+sound-theme-phosh
 xdg-user-dirs

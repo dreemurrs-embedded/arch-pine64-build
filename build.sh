@@ -200,6 +200,9 @@ pacman-key --populate archlinuxarm danctnix
 pacman-key --lsign-key 68B3537F39A313B3E574D06777193F152BDBE6A6
 pacman -Rsn --noconfirm linux-$arch
 pacman -Syu --noconfirm --overwrite=*
+ if [[ $ui = "plasma" ]]; then
+        pacman -S --noconfirm --overwrite=* --needed pipewire-media-session 
+ fi
 pacman -S --noconfirm --overwrite=* --needed ${packages_device[@]} ${packages_ui[@]}
 
 

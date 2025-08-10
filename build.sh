@@ -397,7 +397,8 @@ make_image() {
     mount ${loop_device}p1 $temp/boot
 
     echo "Extracting rootfs to image"
-    bsdtar -xpf "$output_folder/$danctnix_tarball" -C "$temp" || true
+    bsdtar -xpf "$output_folder/$danctnix_tarball" -C "$temp" \
+        || error "Failed to extract rootfs to image"
 
     [ $NO_BOOTLOADER -lt 1 ] && {
         echo "Installing bootloader"

@@ -171,6 +171,10 @@ cleanup_cache() {
     now=$(date +%s)
 
     for file in $output_folder/{alarm-,base-,packaged-}*; do
+        if [ ! -f "$file" ]; then
+            continue;
+        fi
+
         creation_time=$(stat -c %W "$file")
         delta=$((now - creation_time))
 

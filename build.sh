@@ -337,8 +337,8 @@ EOF
 
     unmount_chroot
 
-    # Cache rootfs size with 10% margin for future image creation.
-    imgsize=$(( $(du -bs $temp | awk '{print $1}') * 100 / 90 ))
+    # Cache rootfs size with 20% margin for future image creation.
+    imgsize=$(( $(du -bs $temp | awk '{print $1}') * 120 / 100 ))
     printf "$imgsize" > "$output_folder/$sizefile"
     echo "Cached uncompressed image size: $imgsize"
 

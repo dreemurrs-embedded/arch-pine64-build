@@ -233,7 +233,7 @@ systemctl disable systemd-resolved
 systemctl enable zramswap
 systemctl enable NetworkManager
 
-usermod -a -G network,video,audio,rfkill,wheel alarm
+usermod -a -G network,video,audio,rfkill,wheel,catacomb alarm
 
 cp -rv /etc/skel/. /home/alarm
 chown -R alarm:alarm /home/alarm

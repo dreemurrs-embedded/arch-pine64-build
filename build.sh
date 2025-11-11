@@ -200,6 +200,9 @@ init_rootfs() {
     mount_chroot
     mount_cache
 
+    # Some ALARM tarballs omit this file, breaking mkinitcpio.
+    touch "$temp/etc/vconsole.conf"
+
     rm "$temp/etc/resolv.conf"
     cat /etc/resolv.conf > "$temp/etc/resolv.conf"
 
@@ -338,7 +341,7 @@ EOF
     unmount_chroot
 
     # Cache rootfs size with 20% margin for future image creation.
-    imgsize=$(( $(du -bs $temp | awk '{print $1}') * 120 / 100 ))
+    imgsize=$(( $(du -bs $temp | awk '{print $1}') * 12 / 10 ))
     printf "$imgsize" > "$output_folder/$sizefile"
     echo "Cached uncompressed image size: $imgsize"
 

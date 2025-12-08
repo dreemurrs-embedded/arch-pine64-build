@@ -109,6 +109,9 @@ download_rootfs() {
         return
     fi
 
+    # Delete old ALARM rootfs tarballs.
+    rm $output_folder/ArchLinuxARM*
+
     # Download ALARM rootfs.
     curl -L "$alarm_url" -o "$output_folder/$alarm_filename"
 

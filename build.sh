@@ -190,6 +190,9 @@ init_rootfs() {
     rm "$temp/etc/resolv.conf"
     cat /etc/resolv.conf > "$temp/etc/resolv.conf"
 
+    # workaround for vconsole.conf not found
+    touch "$temp/etc/vconsole.conf"
+
     cp "overlays/base/etc/pacman.conf" "$temp/etc/pacman.conf"
 
     if [[ $ui = "barebone" ]]; then

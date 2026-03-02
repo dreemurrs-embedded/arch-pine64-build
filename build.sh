@@ -18,6 +18,7 @@ date=$(date +%Y%m%d)
 
 error() { echo -e "\e[41m\e[5mERROR:\e[49m\e[25m $1" && exit 1; }
 check_dependency() { [ $(which $1) ] || error "$1 not found. Please make sure it is installed and on your PATH."; }
+check_service() { systemctl -q is-active "$1" || error "$1 inactive. Please make sure it is installed and enabled."; }
 usage() { error "$0 [-a ARCHITECTURE] [-d device] [-u ui] [-h hostname] [--osk-sdl] [--noconfirm] [--cachedir directory] [--no-cachedir]"; }
 cleanup() {
     trap '' EXIT
@@ -44,7 +45,11 @@ pre_check() {
     check_dependency genfstab
     check_dependency lsof
     check_dependency parted
-    chmod 755 "$temp"
+    check_dependency arch-chroot
+    check_dependency qemu-$genericarch-static
+    check_service    systemd-binfmt.service
+    check_service    proc-sys-fs-binfmt_misc.mount
+    chmod 0755 "$temp"
 }
 
 parse_args() {
@@ -95,6 +100,10 @@ parse_presets() {
 
 check_arch() {
     echo ${SUPPORTED_ARCHES[@]} | grep -q $arch || { echo "$arch is not supported. Supported architecture are: ${SUPPORTED_ARCHES[@]}" && exit 1; }
+    case $arch in
+         armv7) genericarch=arm ;;
+         *) genericarch=$arch ;;
+    esac
 }
 
 download_keyring() {
@@ -132,20 +141,11 @@ extract_rootfs() {
 }
 
 mount_chroot() {
-    mount -o bind /dev "$temp/dev"
-    mount -t proc proc "$temp/proc"
-    mount -t sysfs sys "$temp/sys"
-    mount -t tmpfs tmpfs "$temp/tmp"
+    mount --bind "$temp" "$temp"
 }
 
 unmount_chroot() {
-    for i in $(lsof +D "$temp" | tail -n+2 | tr -s ' ' | cut -d ' ' -f 2 | sort -nu); do
-        kill -9 $i
-    done
-
-    for i in $(cat /proc/mounts | awk '{print $2}' | grep "^$(readlink -f $temp)"); do
-        [ $i ] && umount -l $i
-    done
+    umount -l "$temp"
 }
 
 mount_cache() {
@@ -162,7 +162,8 @@ unmount_cache() {
 }
 
 do_chroot() {
-    chroot "$temp" "$@"
+    arch-chroot "$temp" "$@"
+    sync
 }
 
 init_rootfs() {
@@ -188,9 +189,6 @@ init_rootfs() {
     extract_rootfs
     mount_chroot
     mount_cache
-
-    rm "$temp/etc/resolv.conf"
-    cat /etc/resolv.conf > "$temp/etc/resolv.conf"
 
     # workaround for vconsole.conf not found
     touch "$temp/etc/vconsole.conf"

@@ -28,8 +28,10 @@ cleanup() {
     fi
 }
 
-trap cleanup EXIT
-trap cleanup INT
+set_trap() {
+    trap cleanup EXIT
+    trap cleanup INT
+}
 
 pre_check() {
     check_dependency wget
@@ -108,10 +110,10 @@ download_rootfs() {
     [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" ] && return
 
     [ -f "$output_folder/ArchLinuxARM-$arch-latest.tar.gz"  ] && {
-        read -rp "Stock rootfs already exist, delete it? (y/n) " yn
+        read -rp "Stock rootfs already exist, delete it? (y/N) " yn
         case $yn in
             [Yy]*) rm "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" ;;
-            [Nn]*) return ;;
+            [Nn]*|"") return ;;
             *) echo "Aborting." && exit 1 ;;
         esac; }
 
@@ -174,9 +176,9 @@ init_rootfs() {
     [ $NOCONFIRM -gt 0 ] && [ -f "$output_folder/$rootfs_tarball" ] && rm "$output_folder/$rootfs_tarball"
 
     [ -f "$output_folder/$rootfs_tarball"  ] && {
-        read -rp "Rootfs seems to have generated before, delete it? (y/n) " yn
+        read -rp "Rootfs seems to have generated before, delete it? (Y/n) " yn
         case $yn in
-            [Yy]*) rm "$output_folder/$rootfs_tarball" ;;
+            [Yy]*|"") rm "$output_folder/$rootfs_tarball" ;;
             [Nn]*) return ;;
             *) echo "Aborting." && exit 1 ;;
         esac; }
@@ -229,7 +231,9 @@ $(echo -e "${postinstall[@]}")
 cp -rv /etc/skel/. /home/alarm
 chown -R alarm:alarm /home/alarm
 
-if [ -e /etc/sudoers ]; then
+if [ -e /etc/sudoers.d ]; then
+    echo '%wheel ALL=(ALL:ALL) ALL/' > /etc/sudoers.d/90_wheel
+elif [ -e /etc/sudoers ]; then
     sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 fi
 
@@ -374,10 +378,11 @@ make_squashfs() {
     rm -rf "$temp"
 }
 
-pre_check
-parse_args $@
+parse_args "$@"
 [[ "$arch" && "$device" && "$ui" ]] || usage
 check_arch
+pre_check
 parse_presets
+set_trap
 init_rootfs
 [ $OSK_SDL -gt 0 ] && make_squashfs || make_image

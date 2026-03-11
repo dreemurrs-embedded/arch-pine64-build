@@ -14,6 +14,7 @@ output_folder="build"
 mkdir -p "$output_folder"
 cachedir="$output_folder/pkgcache"
 temp=$(mktemp -p $output_folder -d)
+sharedcache=$(mktemp -p $output_folder -d)
 date=$(date +%Y%m%d)
 
 error() { echo -e "\e[41m\e[5mERROR:\e[49m\e[25m $1" && exit 1; }
@@ -23,9 +24,15 @@ usage() { error "$0 [-a ARCHITECTURE] [-d device] [-u ui] [-h hostname] [--osk-s
 cleanup() {
     trap '' EXIT
     trap '' INT
+
     if [ -d "$temp" ]; then
         unmount_chroot
-        rm -r "$temp"
+        unmount_cache
+        rm -rf "$temp"
+    fi
+    if [ -d "$sharedcache" ]; then
+        unmount_shared
+        rm -rf "$sharedcache"
     fi
 }
 
@@ -137,7 +144,7 @@ download_rootfs() {
 
 extract_rootfs() {
     [ -f "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" ] || error "Rootfs not found"
-    bsdtar -xpf "$output_folder/ArchLinuxARM-$arch-latest.tar.gz" -C "$temp"
+    bsdtar -xpf $output_folder/ArchLinuxARM-$arch-latest.tar.gz -C $temp
 }
 
 mount_chroot() {
@@ -156,9 +163,25 @@ mount_cache() {
 }
 
 unmount_cache() {
+    if [[ $(findmnt "$temp/mnt") ]]; then
+        umount -l "$temp/mnt" || error "Failed to unmount shared cache!";
+    fi
+
     if [[ $(findmnt "$temp/var/cache/pacman/pkg") ]]; then
         umount -l "$temp/var/cache/pacman/pkg" || error "Failed to unmount pkg cache!";
     fi
+}
+
+mount_shared() {
+    echo "Running sudo to mount shared cache"
+    mount --bind "$sharedcache" "$temp/mnt" || error "Failed to mount shared cache!"
+
+}
+
+unmount_shared() {
+    echo "Running sudo to unmount shared cache"
+    umount -l "$sharedcache" || error "Failed to unmount shared cache!"
+
 }
 
 do_chroot() {
@@ -189,23 +212,29 @@ init_rootfs() {
     extract_rootfs
     mount_chroot
     mount_cache
+    mount_shared
 
     # workaround for vconsole.conf not found
     touch "$temp/etc/vconsole.conf"
 
-    cp "overlays/base/etc/pacman.conf" "$temp/etc/pacman.conf"
+    cp "overlays/base/etc/pacman.conf" "$sharedcache/pacman.conf"
+    sync
+    do_chroot cp /mnt/pacman.conf /etc/pacman.conf
 
     if [[ $ui = "barebone" ]]; then
-        sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' "$temp/etc/locale.gen"
+        do_chroot sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' "/etc/locale.gen"
     fi
 
-    echo "${hostname:-danctnix}" > "$temp/etc/hostname"
+    do_chroot sh -c "echo ${hostname:-danctnix} > /etc/hostname"
 
     # Install our GPG key first, this will be overwritten with our package later.
-    cp $output_folder/danctnix.gpg "$temp/usr/share/pacman/keyrings/danctnix.gpg"
-    cp $output_folder/danctnix-trusted "$temp/usr/share/pacman/keyrings/danctnix-trusted"
+    cp $output_folder/danctnix.gpg "$sharedcache/danctnix.gpg"
+    cp $output_folder/danctnix-trusted "$sharedcache/danctnix-trusted"
 
-    cat > "$temp/second-phase" <<EOF
+    do_chroot cp /mnt/danctnix.gpg /usr/share/pacman/keyrings/danctnix.gpg
+    do_chroot cp /mnt/danctnix-trusted /usr/share/pacman/keyrings/danctnix-trusted
+
+    cat > "$sharedcache/second-phase" <<EOF
 #!/bin/bash
 set -e
 pacman-key --init
@@ -247,26 +276,28 @@ ln -s ../usr/share/zoneinfo/Europe/London /etc/localtime
 
 # remove pacman gnupg keys post generation
 rm -rf /etc/pacman.d/gnupg
-rm /second-phase
+rm /mnt/second-phase
 EOF
 
-    chmod +x "$temp/second-phase"
-    do_chroot /second-phase || error "Failed to run the second phase rootfs build!"
+    chmod +x "$sharedcache/second-phase"
+    do_chroot /mnt/second-phase || error "Failed to run the second phase rootfs build!"
 
-    cp -r overlays/base/* "$temp/"
-    [ -d "overlays/$ui" ] && cp -r overlays/$ui/* "$temp/"
-    [ -d "devices/$device/overlays/base" ] && cp -r devices/$device/overlays/base/* "$temp/"
-    [ -d "devices/$device/overlays/$ui" ] && cp -r devices/$device/overlays/$ui/* "$temp/"
+    mkdir "$sharedcache/overlay"
+    cp -r overlays/base/* "$sharedcache/overlay/"
+    [ -d "overlays/$ui" ] && cp -r overlays/$ui/* "$sharedcache/overlay/"
+    [ -d "devices/$device/overlays/base" ] && cp -r devices/$device/overlays/base/* "$sharedcache/overlay/"
+    [ -d "devices/$device/overlays/$ui" ] && cp -r devices/$device/overlays/$ui/* "$sharedcache/overlay/"
+    do_chroot sh -c "cp -r /mnt/overlay/* /"
 
     if [ -e "$temp/usr/lib/initcpio/hooks/resizerootfs" ] && [ $OSK_SDL -gt 0 ]; then
-        rm -f $temp/usr/lib/initcpio/hooks/resizerootfs
-        rm -f $temp/usr/lib/initcpio/install/resizerootfs
+        do_chroot rm -f /usr/lib/initcpio/hooks/resizerootfs
+        do_chroot rm -f /usr/lib/initcpio/install/resizerootfs
     fi
 
-    [ -e "$temp/usr/lib/initcpio/hooks/resizerootfs" ] && sed -i '/^HOOKS=/s/fsck/resizerootfs fsck/g' "$temp/etc/mkinitcpio.conf"
-    [ -e "$temp/usr/lib/initcpio/hooks/osk-sdl" ] && sed -i '/^HOOKS=/s/fsck/osk-sdl fsck/g' "$temp/etc/mkinitcpio.conf"
+    [ -e "$temp/usr/lib/initcpio/hooks/resizerootfs" ] && do_chroot sed -i '/^HOOKS=/s/fsck/resizerootfs fsck/g' "/etc/mkinitcpio.conf"
+    [ -e "$temp/usr/lib/initcpio/hooks/osk-sdl" ] && do_chroot sed -i '/^HOOKS=/s/fsck/osk-sdl fsck/g' "/etc/mkinitcpio.conf"
 
-    sed -i "s/REPLACEDATE/$date/g" "$temp/usr/local/sbin/first_time_setup.sh"
+    do_chroot sed -i "s/REPLACEDATE/$date/g" "/usr/local/sbin/first_time_setup.sh"
 
     [[ "$ui" != "barebone" ]] && do_chroot passwd -dl root
 
@@ -274,6 +305,7 @@ EOF
     do_chroot mkinitcpio -P
 
     unmount_cache
+    unmount_shared
     yes | do_chroot pacman -Scc
 
     unmount_chroot

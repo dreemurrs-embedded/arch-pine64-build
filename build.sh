@@ -10,6 +10,7 @@ NOCONFIRM=0
 OSK_SDL=0
 NO_BOOTLOADER=0
 use_pipewire=0
+minimal_firmware=0
 output_folder="build"
 mkdir -p "$output_folder"
 cachedir="$output_folder/pkgcache"
@@ -25,6 +26,9 @@ cleanup() {
     if [ -d "$temp" ]; then
         unmount_chroot
         rm -r "$temp"
+    fi
+    if [ -n "$loop_device" ]; then
+        losetup -d "$loop_device" || true
     fi
 }
 
@@ -205,6 +209,23 @@ init_rootfs() {
     cp $output_folder/danctnix.gpg "$temp/usr/share/pacman/keyrings/danctnix.gpg"
     cp $output_folder/danctnix-trusted "$temp/usr/share/pacman/keyrings/danctnix-trusted"
 
+    firmware_cleanup=""
+    if [ $minimal_firmware -gt 0 ]; then
+        # The ALARM rootfs installs the linux-firmware meta package, which
+        # pulls in ~1 GiB of firmware for hardware the device does not have.
+        # Remove it and keep only the linux-firmware-* packages that the
+        # device's packages list or depend on. Packages that were already
+        # installed as dependencies keep that install reason with --needed,
+        # so mark the device's packages explicit first. Some names in the
+        # list are only provided by another package (rfkill by util-linux),
+        # so only pass the names pacman -Q knows.
+        firmware_cleanup="pacman -Qq ${packages_device[*]} 2>/dev/null | xargs -r pacman -D --asexplicit
+if pacman -Q linux-firmware >/dev/null 2>&1; then
+    pacman -Rdd --noconfirm linux-firmware
+    pacman -Qdtq | grep '^linux-firmware-' | xargs -r pacman -Rns --noconfirm
+fi"
+    fi
+
     cat > "$temp/second-phase" <<EOF
 #!/bin/bash
 set -e
@@ -214,6 +235,8 @@ pacman-key --lsign-key 68B3537F39A313B3E574D06777193F152BDBE6A6
 pacman -Rsn --noconfirm linux-$arch
 pacman -Syu --noconfirm --overwrite=*
 pacman -S --noconfirm --overwrite=* --needed ${packages_device[@]} ${packages_ui[@]}
+
+${firmware_cleanup}
 
 
 systemctl disable sshd
@@ -256,12 +279,6 @@ EOF
     [ -d "devices/$device/overlays/base" ] && cp -r devices/$device/overlays/base/* "$temp/"
     [ -d "devices/$device/overlays/$ui" ] && cp -r devices/$device/overlays/$ui/* "$temp/"
 
-    if [ -e "$temp/usr/lib/initcpio/hooks/resizerootfs" ] && [ $OSK_SDL -gt 0 ]; then
-        rm -f $temp/usr/lib/initcpio/hooks/resizerootfs
-        rm -f $temp/usr/lib/initcpio/install/resizerootfs
-    fi
-
-    [ -e "$temp/usr/lib/initcpio/hooks/resizerootfs" ] && sed -i '/^HOOKS=/s/fsck/resizerootfs fsck/g' "$temp/etc/mkinitcpio.conf"
     [ -e "$temp/usr/lib/initcpio/hooks/osk-sdl" ] && sed -i '/^HOOKS=/s/fsck/osk-sdl fsck/g' "$temp/etc/mkinitcpio.conf"
 
     sed -i "s/REPLACEDATE/$date/g" "$temp/usr/local/sbin/first_time_setup.sh"
@@ -331,7 +348,16 @@ make_image() {
     mount ${loop_device}p1 $temp/boot
 
     echo "Extracting rootfs to image"
-    bsdtar -xpf "$output_folder/$rootfs_tarball" -C "$temp" || true
+    # Extended file flags set on the build host (e.g. btrfs No_COW on
+    # /var/log/journal) cannot be restored on ext4; that warning is harmless.
+    # Anything else, such as running out of space, must stop the build: the
+    # image would otherwise boot with files that have a size but no data.
+    bsdtar -xpf "$output_folder/$rootfs_tarball" -C "$temp" 2> "$output_folder/extract.log" || {
+        if grep -v -e "Failed to set file flags" -e "Error exit delayed from previous errors" "$output_folder/extract.log" | grep -q .; then
+            cat "$output_folder/extract.log"
+            error "Failed to extract the rootfs to the image. Is size_ui_$ui ($disk_size) too small?"
+        fi
+    }
 
     [ $NO_BOOTLOADER -lt 1 ] && {
         echo "Installing bootloader"
@@ -352,6 +378,7 @@ make_image() {
     umount -R $temp
     rm -rf $temp
     losetup -d $loop_device
+    loop_device=
 }
 
 make_squashfs() {
